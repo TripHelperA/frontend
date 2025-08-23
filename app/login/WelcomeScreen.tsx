@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Image, Text, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-const backgroundImage = require("../../assets/background4.jpg");
+const backgroundImage = require("../../assets/backgrounds/background1.jpg");
 const router = useRouter();
 
 export default function WelcomeScreen() {

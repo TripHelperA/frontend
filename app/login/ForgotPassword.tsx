@@ -3,10 +3,10 @@ import { useRouter } from "expo-router";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-const backgroundImage = require("../../assets/backgrounds/background3.jpg");
+const backgroundImage = require("../../assets/backgrounds/background2.jpg");
 const router = useRouter();
 
-export default function Register() {
+export default function Login() {
     return (
         <View className="flex-1 flex justify-center">
             {/* background image */}
@@ -25,29 +25,23 @@ export default function Register() {
 
             <View className="p-5 pb-10 flex items-center mx-4 space-y-10">
                 <Text className="text-white font-bold text-5xl pb-2" style={{ fontSize: wp(10) }} >
-                    Let's get started.
+                    Find your account
                 </Text>
                 {/* form */}
                 <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
                     <TextInput placeholder='Email' placeholderTextColor={'white'} />
                 </View>
-                <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
-                    <TextInput placeholder='Password' placeholderTextColor={'white'} />
-                </View>
 
-
-                <TouchableOpacity onPress={() => router.push("/tabs/Home")} className="bg-black/20 p-3 rounded-full flex">
+                <TouchableOpacity className="bg-black/20 p-3 rounded-full flex">
                     <Text className="text-white text-center font-bold" style={{ fontSize: wp(5.5) }} >
-                        Signup
+                        Send
                     </Text>
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-3">
-                    <Text className="text-white text-center font-bold">Already have an account? </Text>
-                    <TouchableOpacity onPress={() => router.push("/login/Login")}>
-                        <View className="bg-black/40 px-2 py-1 rounded-lg">
-                            <Text className="text-sky-500 font-bold">Login</Text>
-                        </View>
+                    <Text className="text-white text-center font-bold">Want to login instead </Text>
+                    <TouchableOpacity onPress={() => router.push("/login/Register")}>
+                        <Text className="text-sky-600 font-bold">SignUp</Text>
                     </TouchableOpacity>
                 </View>
             </View>

@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-const backgroundImage = require("../../assets/background2.jpg");
+const backgroundImage = require("../../assets/backgrounds/background2.jpg");
 const router = useRouter();
 
 export default function Login() {
@@ -51,7 +51,9 @@ export default function Login() {
                 <View className="flex-row justify-center mt-3">
                     <Text className="text-white text-center font-bold">Don't have an account? </Text>
                     <TouchableOpacity onPress={() => router.push("/login/Register")}>
-                        <Text className="text-sky-600 font-bold">SignUp</Text>
+                        <View className="bg-black/40 px-2 py-1 rounded-lg">
+                            <Text className="text-sky-500 font-bold">SignUp</Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
             </View>

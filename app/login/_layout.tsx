@@ -19,6 +19,9 @@ export default function LoginLayout() {
             <Stack.Screen
                 name="Register"
             />
+            <Stack.Screen
+                name="ForgotPassword"
+            />
         </Stack>
     );
 }
