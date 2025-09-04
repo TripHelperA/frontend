@@ -43,10 +43,14 @@ export default function Register() {
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-3">
-                    <Text className="text-white text-center font-bold">Already have an account? </Text>
-                    <TouchableOpacity onPress={() => router.push("/login/Login")}>
+                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(3.5) }}>
+                        Already have an account?
+                    </Text>
+                    <TouchableOpacity onPress={() => router.replace("/login/Login")}>
                         <View className="bg-black/40 px-2 py-1 rounded-lg">
-                            <Text className="text-sky-500 font-bold">Login</Text>
+                            <Text className="text-sky-500 font-bold" style={{ fontSize: wp(3.5) }}>
+                                Login
+                            </Text>
                         </View>
                     </TouchableOpacity>
                 </View>

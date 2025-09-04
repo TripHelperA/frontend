@@ -39,9 +39,13 @@ export default function Login() {
                 </TouchableOpacity>
 
                 <View className="flex-row justify-center mt-3">
-                    <Text className="text-white text-center font-bold">Want to login instead </Text>
-                    <TouchableOpacity onPress={() => router.push("/login/Register")}>
-                        <Text className="text-sky-600 font-bold">SignUp</Text>
+                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(3.5) }}>
+                        Want to login instead
+                    </Text>
+                    <TouchableOpacity onPress={() => router.replace("/login/Register")}>
+                        <Text className="text-sky-600 font-bold" style={{ fontSize: wp(3.5) }}>
+                            SignUp
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
