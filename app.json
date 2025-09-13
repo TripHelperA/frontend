@@ -2,6 +2,7 @@
     "expo": {
         "name": "my-expo-app",
         "slug": "my-expo-app",
+        "scheme": "myexpoapp",
         "version": "1.0.0",
         "web": {
             "favicon": "./assets/favicon.png"
@@ -40,6 +41,12 @@
                 }
             },
             "package": "com.ibrahim.enes.yilmaz.myexpoapp"
+        },
+        "extra": {
+            "router": {},
+            "eas": {
+                "projectId": "cc31e13b-c18e-451e-9e92-3848c7546eb5"
+            }
         }
     }
 }

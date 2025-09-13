@@ -1,22 +1,46 @@
+import { signIn } from "@aws-amplify/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
+import { ConsoleLogger } from 'aws-amplify/utils';
+
+ConsoleLogger.LOG_LEVEL = 'DEBUG';     // global level
+const log = new ConsoleLogger('Auth'); // your logger
+
 const backgroundImage = require("../../assets/backgrounds/background2.jpg");
-const router = useRouter();
 
 export default function Login() {
+    const router = useRouter();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleLogin = async () => {
+        setLoading(true);
+        setError("");
+        try {
+            const user = await signIn({ username: email, password });
+            console.log("Logged in user:", user);
+            router.push("/tabs/Home");
+        } catch (e: any) {
+            log.error('signIn failed', e);
+            setError(e.message ?? "Login failed.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <View className="flex-1 flex justify-center">
-            {/* background image */}
-            <Image
-                source={backgroundImage}
-                className="h-full w-full absolute"
-            />
-            {/* content & gradient */}
+            {/* background */}
+            <Image source={backgroundImage} className="h-full w-full absolute" />
+
             <LinearGradient
-                colors={['transparent', 'rgba(3,105,161,0.8)']}
+                colors={["transparent", "rgba(3,105,161,0.8)"]}
                 style={{ width: wp(100), height: hp(100) }}
                 start={{ x: 0.5, y: 1 }}
                 end={{ x: 0.5, y: 0 }}
@@ -24,30 +48,55 @@ export default function Login() {
             />
 
             <View className="p-5 pb-10 flex items-center mx-4 space-y-10">
-                <Text className="text-white font-bold text-5xl pb-2" style={{ fontSize: wp(10) }} >
+                <Text className="text-white font-bold text-5xl pb-2" style={{ fontSize: wp(10) }}>
                     Welcome Back
                 </Text>
-                {/* form */}
+
+                {/* Email */}
                 <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
-                    <TextInput placeholder='Email' placeholderTextColor={'white'} />
-                </View>
-                <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
-                    <TextInput placeholder='Password' placeholderTextColor={'white'} />
+                    <TextInput
+                        value={email}
+                        onChangeText={setEmail}
+                        placeholder="Email"
+                        placeholderTextColor="white"
+                        autoCapitalize="none"
+                    />
                 </View>
 
+                {/* Password */}
+                <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
+                    <TextInput
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor="white"
+                        autoCapitalize="none"
+                        secureTextEntry
+                    />
+                </View>
 
-                <TouchableOpacity onPress={() => router.push("/tabs/Home")} className="bg-black/20 p-3 rounded-full flex">
-                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(5.5) }} >
-                        Login
+                {/* Error */}
+                {error ? <Text className="text-red-500">{error}</Text> : null}
+
+                {/* Login button */}
+                <TouchableOpacity
+                    onPress={handleLogin}
+                    disabled={loading}
+                    className="bg-black/20 p-3 rounded-full flex"
+                >
+                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(5.5) }}>
+                        {loading ? "Logging in..." : "Login"}
                     </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity className="text-center" onPress={() => router.replace("/login/ForgotPassword")}>
-                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(3.5) }} >
+                {/* Forgot Password */}
+                <TouchableOpacity onPress={() => router.replace("/login/ForgotPassword")}>
+                    <Text className="text-white text-center font-bold" style={{ fontSize: wp(3.5) }}>
                         Forgot Password?
                     </Text>
                 </TouchableOpacity>
 
+                {/* Register */}
                 <View className="flex-row justify-center mt-3">
                     <Text className="text-white text-center font-bold" style={{ fontSize: wp(3.5) }}>
                         Don't have an account?
@@ -61,6 +110,6 @@ export default function Login() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </View >
+        </View>
     );
 }
