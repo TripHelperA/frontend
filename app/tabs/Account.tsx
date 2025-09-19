@@ -1,13 +1,10 @@
 // screens/Settings.tsx
 import Card from "@/components/tabs/Card";
-import DangerButtonRow from "@/components/tabs/DangerButtonRow";
 import FooterText from "@/components/tabs/FooterText";
 import Header from "@/components/tabs/Header";
 import { ListRowChevron } from "@/components/tabs/ListRowChevron";
-import { ListRowSwitch } from "@/components/tabs/ListRowSwitch";
 import ProfileCard from "@/components/tabs/ProfileCard";
 import SectionTitle from "@/components/tabs/SectionTitle";
-import { router } from "expo-router";
 import { useState } from "react";
 import { SafeAreaView, ScrollView, View } from "react-native";
 
@@ -28,33 +25,25 @@ export default function Settings() {
                                 avatarUri="https://images.unsplash.com/photo-1633332755192-727a05c4013d?..."
                                 name="John Doe"
                                 email="john@example.com"
-                                onPress={() => router.push("/tabs/Account")}
+
                             />
                         </Card>
                     </View>
 
                     <View className="py-3">
-                        <SectionTitle>Preferences</SectionTitle>
+                        <SectionTitle>Personal Information</SectionTitle>
                         <Card>
-                            <ListRowChevron label="Language" value="English" onPress={() => { }} />
-                            <ListRowSwitch label="Email Notifications" value={emailNotifications} onValueChange={setEmailNotifications} />
-                            <ListRowSwitch label="Push Notifications" value={pushNotifications} onValueChange={setPushNotifications} />
+                            <ListRowChevron label="Username" value="petitJohn" />
+                            <ListRowChevron label="Name" value="John" onPress={() => { }} />
+                            <ListRowChevron label="Surname" value="cCc" onPress={() => { }} />
                         </Card>
                     </View>
 
                     <View className="py-3">
-                        <SectionTitle>Resources</SectionTitle>
+                        <SectionTitle>Login Information</SectionTitle>
                         <Card>
-                            <ListRowChevron label="Contact Us" onPress={() => { }} />
-                            <ListRowChevron label="Report Bug" onPress={() => { }} />
-                            <ListRowChevron label="Rate in App Store" onPress={() => { }} />
-                            <ListRowChevron label="Terms and Privacy" onPress={() => { }} />
-                        </Card>
-                    </View>
-
-                    <View className="py-3">
-                        <Card>
-                            <DangerButtonRow label="Log Out" onPress={() => { }} />
+                            <ListRowChevron label="Email" value="zartzurt@gmail.com" onPress={() => { }} />
+                            <ListRowChevron label="Update Password" onPress={() => { }} />
                         </Card>
                     </View>
 

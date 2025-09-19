@@ -7,8 +7,8 @@ import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-nat
 
 import { ConsoleLogger } from 'aws-amplify/utils';
 
-ConsoleLogger.LOG_LEVEL = 'DEBUG';     // global level
-const log = new ConsoleLogger('Auth'); // your logger
+ConsoleLogger.LOG_LEVEL = 'DEBUG';
+const log = new ConsoleLogger('Auth');
 
 const backgroundImage = require("../../assets/backgrounds/background2.jpg");
 
@@ -25,11 +25,12 @@ export default function Login() {
         try {
             const user = await signIn({ username: email, password });
             console.log("Logged in user:", user);
-            router.push("/tabs/Home");
+            router.replace("/tabs/Home");
         } catch (e: any) {
             log.error('signIn failed', e);
             setError(e.message ?? "Login failed.");
         } finally {
+            router.replace("/tabs/Home");
             setLoading(false);
         }
     };

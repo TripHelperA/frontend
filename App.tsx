@@ -1,12 +1,9 @@
-import { Slot } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "./global.css";
+import { ExpoRoot } from "expo-router";
+
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import '@/global.css';
 
 export default function App() {
-    return (
-        <>
-            <Slot />
-            <StatusBar style="auto" />
-        </>
-    );
+    const ctx = require.context("./app");
+    return <ExpoRoot context={ctx} />;
 }
