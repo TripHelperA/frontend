@@ -13,7 +13,7 @@ import { SafeAreaView, ScrollView, View } from "react-native";
 
 export default function Settings() {
     const [emailNotifications, setEmailNotifications] = useState(true);
-    const [pushNotifications, setPushNotifications] = useState(false);
+    const [pushNotifications, setPushNotifications] = useState(true);
 
     return (
         <SafeAreaView className="flex-1 bg-neutral-50">
@@ -34,9 +34,9 @@ export default function Settings() {
                     </View>
 
                     <View className="py-3">
-                        <SectionTitle>Preferences</SectionTitle>
+                        <SectionTitle>Preferences</SectionTitle >
                         <Card>
-                            <ListRowChevron label="Language" value="English" onPress={() => { }} />
+                            <ListRowChevron label="Language" value="English" onPress={() => { router.push("/tabs/SelectLanguage") }} />
                             <ListRowSwitch label="Email Notifications" value={emailNotifications} onValueChange={setEmailNotifications} />
                             <ListRowSwitch label="Push Notifications" value={pushNotifications} onValueChange={setPushNotifications} />
                         </Card>

@@ -49,6 +49,23 @@ export default function TabLayout() {
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
                 }}
             />
+            <Tabs.Screen
+                name="Account"
+                options={{
+                    href: null,
+                    title: 'Account',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
+
+            <Tabs.Screen
+                name="SelectLanguage"
+                options={{
+                    href: null,
+                    title: 'SelectLanguage',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
         </Tabs>
     );
 }

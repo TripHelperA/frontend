@@ -30,7 +30,7 @@ export default function Login() {
             log.error('signIn failed', e);
             setError(e.message ?? "Login failed.");
         } finally {
-            router.replace("/tabs/Home");
+            router.replace("/tabs/Home"); //TODO: remove this line after development.
             setLoading(false);
         }
     };
