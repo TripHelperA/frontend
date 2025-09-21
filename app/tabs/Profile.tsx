@@ -50,7 +50,6 @@ export default function Profile() {
                     <View className="py-3">
                         <SectionTitle>Personal Information</SectionTitle>
                         <Card> {/* TODO: add onpress for updating the values */}
-                            <ListRowChevron label="Username" value="petitJohn" />
                             <ListRowChevron label="Name" value="John" onPress={() => { }} />
                             <ListRowChevron label="Surname" value="cCc" onPress={() => { }} />
                         </Card>
