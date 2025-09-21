@@ -1,5 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { Text } from "react-native";
+import { heightPercentageToDP as hp } from "react-native-responsive-screen";
 import ListRow from "./ListRow";
 
 export function ListRowChevron({
@@ -15,7 +16,7 @@ export function ListRowChevron({
         <ListRow
             onPress={onPress}
             Right={
-                onPress ? <Feather name="chevron-right" size={20} color="#bcbcbc" /> : undefined
+                onPress ? <Feather name="chevron-right" color="#bcbcbc" style={{ height: hp("3%") }} /> : undefined
             }
             className="border-t border-neutral-200"
         >

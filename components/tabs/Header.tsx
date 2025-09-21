@@ -1,5 +1,6 @@
 import Feather from "@expo/vector-icons/Feather";
 import { Text, TouchableOpacity, View } from "react-native";
+import { widthPercentageToDP as wp } from "react-native-responsive-screen";
 
 type Props = {
     title: string;
@@ -26,7 +27,7 @@ export default function Header({
                     <Feather name={LeftIcon} size={24} color="#0a0a0a" />
                 </TouchableOpacity>
             ) : (
-                <View className="w-10" /> // keeps title centered
+                <View style={{ width: wp("5%") }} /> // keeps title centered
             )}
 
             <Text numberOfLines={1} className="flex-1 text-center text-2xl font-semibold text-neutral-900">
@@ -39,7 +40,7 @@ export default function Header({
                     <Feather name={RightIcon} size={24} color="#0a0a0a" />
                 </TouchableOpacity>
             ) : (
-                <View className="w-10" /> // keeps title centered
+                <View style={{ width: wp("5%") }} /> // keeps title centered
             )}
         </View>
     );

@@ -7,6 +7,7 @@ import { ListRowChevron } from "@/components/tabs/ListRowChevron";
 import { ListRowSwitch } from "@/components/tabs/ListRowSwitch";
 import ProfileCard from "@/components/tabs/ProfileCard";
 import SectionTitle from "@/components/tabs/SectionTitle";
+import { signOut } from "@aws-amplify/auth";
 import { router } from "expo-router";
 import { useState } from "react";
 import { SafeAreaView, ScrollView, View } from "react-native";
@@ -15,6 +16,16 @@ export default function Settings() {
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [pushNotifications, setPushNotifications] = useState(true);
 
+    const handleSignout = async () => {
+        try {
+            await signOut();
+            // after sign out, redirect to your auth screen
+            router.replace("/auth/Login"); // adjust path to your login screen
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-neutral-50">
             <Header title="Settings" />
@@ -22,13 +33,13 @@ export default function Settings() {
             <ScrollView>
                 <View className="px-4">
                     <View className="py-3 pt-1">
-                        <SectionTitle>Account</SectionTitle>
+                        <SectionTitle>Profile</SectionTitle>
                         <Card>
                             <ProfileCard
                                 avatarUri="https://images.unsplash.com/photo-1633332755192-727a05c4013d?..."
                                 name="John Doe"
                                 email="john@example.com"
-                                onPress={() => router.push("/tabs/Account")}
+                                onPress={() => router.replace("/tabs/Profile")}
                             />
                         </Card>
                     </View>
@@ -54,7 +65,7 @@ export default function Settings() {
 
                     <View className="py-3">
                         <Card>
-                            <DangerButtonRow label="Log Out" onPress={() => { }} />
+                            <DangerButtonRow label="Log Out" onPress={() => { handleSignout }} />
                         </Card>
                     </View>
 
