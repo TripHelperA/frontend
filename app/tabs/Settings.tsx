@@ -1,4 +1,3 @@
-// screens/Settings.tsx
 import Card from "@/components/tabs/Card";
 import DangerButtonRow from "@/components/tabs/DangerButtonRow";
 import FooterText from "@/components/tabs/FooterText";
@@ -7,24 +6,48 @@ import { ListRowChevron } from "@/components/tabs/ListRowChevron";
 import { ListRowSwitch } from "@/components/tabs/ListRowSwitch";
 import ProfileCard from "@/components/tabs/ProfileCard";
 import SectionTitle from "@/components/tabs/SectionTitle";
-import { signOut } from "@aws-amplify/auth";
+import { fetchUserAttributes, signOut } from "@aws-amplify/auth";
+import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import { useState } from "react";
-import { SafeAreaView, ScrollView, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, SafeAreaView, ScrollView, View } from "react-native";
 
 export default function Settings() {
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [pushNotifications, setPushNotifications] = useState(true);
 
+    const [name, setName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [avatarUri, setAvatarUri] = useState<string | undefined>();
+
+    const loadAttributes = useCallback(async () => {
+        try {
+            const attrs = await fetchUserAttributes();
+            setName(attrs.name ?? "");
+            setLastName(attrs.family_name ?? "");
+            setEmail(attrs.email ?? "");
+        } catch (e) {
+            console.warn("fetchUserAttributes error:", e);
+        }
+    }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadAttributes();
+        }, [loadAttributes])
+    );
+
     const handleSignout = async () => {
         try {
             await signOut();
-            // after sign out, redirect to your auth screen
-            router.replace("/auth/Login"); // adjust path to your login screen
+            router.replace("/login/Login");
         } catch (error) {
             console.error("Error signing out:", error);
+            Alert.alert("Sign out failed", "Please try again.");
         }
     };
+
 
     return (
         <SafeAreaView className="flex-1 bg-neutral-50">
@@ -37,9 +60,9 @@ export default function Settings() {
                         <Card>
                             <ProfileCard
                                 avatarUri="https://images.unsplash.com/photo-1633332755192-727a05c4013d?..."
-                                name="John Doe"
-                                email="john@example.com"
-                                onPress={() => router.replace("/tabs/Profile")}
+                                name={`${name} ${lastName}`}
+                                email={email}
+                                onPress={() => router.back()}
                             />
                         </Card>
                     </View>
@@ -65,7 +88,7 @@ export default function Settings() {
 
                     <View className="py-3">
                         <Card>
-                            <DangerButtonRow label="Log Out" onPress={() => { handleSignout }} />
+                            <DangerButtonRow label="Log Out" onPress={handleSignout} />
                         </Card>
                     </View>
 

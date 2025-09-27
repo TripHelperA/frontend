@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 export default function LoginLayout() {
     return (
         <Stack
+            initialRouteName="WelcomeScreen"
             screenOptions={{
                 headerShown: true,
                 headerTransparent: true,
@@ -21,6 +22,15 @@ export default function LoginLayout() {
             />
             <Stack.Screen
                 name="ForgotPassword"
+            />
+            <Stack.Screen
+                name="PickInterest"
+                options={{
+                    headerShown: false,
+                    headerStyle: {
+                        backgroundColor: "#090909",
+                    }
+                }}
             />
         </Stack>
     );

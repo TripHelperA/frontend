@@ -1,21 +1,20 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { colors } from "../../colors/mainColors";
 
 export default function TabLayout() {
     return (
         <Tabs
             screenOptions={{
-                tabBarActiveTintColor: colors.primary,
-                tabBarInactiveTintColor: colors.secondary,
+                tabBarActiveTintColor: "#020617",
+                tabBarInactiveTintColor: "#475569",
                 headerStyle: {
-                    backgroundColor: "#25292e",
+                    backgroundColor: "#9ca3af",
                 },
                 headerShown: false,
                 headerShadowVisible: false,
                 headerTintColor: "#fff",
                 tabBarStyle: {
-                    backgroundColor: colors.background,
+                    backgroundColor: "#f8fafc",
                 },
             }}
         >
@@ -28,6 +27,13 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
+                name="Profile"
+                options={{
+                    title: 'Profile',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="user" color={color} />,
+                }}
+            />
+            <Tabs.Screen
                 name="Settings"
                 options={{
                     title: 'Settings',
@@ -35,34 +41,26 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="Profile"
-                options={{
-                    title: 'Profile',
-                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
-                }}
-            />
-            <Tabs.Screen
-                name="profile"
-                options={{
-                    href: null,
-                    title: 'Profile',
-                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
-                }}
-            />
-            <Tabs.Screen
-                name="Account"
-                options={{
-                    href: null,
-                    title: 'Account',
-                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
-                }}
-            />
-
-            <Tabs.Screen
                 name="SelectLanguage"
                 options={{
                     href: null,
                     title: 'SelectLanguage',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="EditField"
+                options={{
+                    href: null,
+                    title: 'EditField',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="UpdatePassword"
+                options={{
+                    href: null,
+                    title: 'UpdatePassword',
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
                 }}
             />
