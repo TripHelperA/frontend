@@ -1,4 +1,4 @@
-import { signIn } from "@aws-amplify/auth";
+import { signIn, signOut } from "@aws-amplify/auth";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -23,6 +23,7 @@ export default function Login() {
         setLoading(true);
         setError("");
         try {
+            await signOut({ global: true });
             const user = await signIn({ username: email, password });
             console.log("Logged in user:", user);
             router.replace("/tabs/Home");
@@ -30,7 +31,6 @@ export default function Login() {
             log.error('signIn failed', e);
             setError(e.message ?? "Login failed.");
         } finally {
-            router.replace("/tabs/Home"); //TODO: remove this line after development.
             setLoading(false);
         }
     };

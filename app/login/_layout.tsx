@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 export default function LoginLayout() {
     return (
         <Stack
+            initialRouteName="WelcomeScreen"
             screenOptions={{
                 headerShown: true,
                 headerTransparent: true,

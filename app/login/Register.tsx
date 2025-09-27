@@ -54,7 +54,7 @@ export default function Register() {
         try {
             setLoading(true);
             await confirmSignUp({ username: email, confirmationCode: code });
-            router.replace("/tabs/Home");
+            router.replace("/tabs/Login");
         } catch (e: any) {
             setError(e.message ?? "Confirmation failed.");
         } finally {
