@@ -51,7 +51,7 @@ export default function PickInterests() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-neutral-50">>
+        <SafeAreaView className="flex-1 bg-neutral-50">
             <View className="flex-1 pl-3 pr-3 ">
                 <ScrollView
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
@@ -82,7 +82,7 @@ export default function PickInterests() {
                                 >
                                     <Text
                                         className={[
-                                            "text-base text-lg",
+                                            "text-lg",
                                             isSelected ? "text-white font-bold" : "text-neutral-800",
                                         ].join(" ")}
                                     >
