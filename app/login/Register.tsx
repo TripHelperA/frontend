@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-import { confirmSignUp, resendSignUpCode, signUp } from "aws-amplify/auth";
+import { confirmSignUp, resendSignUpCode, signIn, signUp } from "aws-amplify/auth";
 
 const backgroundImage = require("../../assets/backgrounds/background3.jpg");
 
@@ -54,7 +54,8 @@ export default function Register() {
         try {
             setLoading(true);
             await confirmSignUp({ username: email, confirmationCode: code });
-            router.replace("/tabs/Login");
+            const user = await signIn({ username: email, password });
+            router.replace("/tabs/PickInterest");
         } catch (e: any) {
             setError(e.message ?? "Confirmation failed.");
         } finally {

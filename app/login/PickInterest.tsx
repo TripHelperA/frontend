@@ -2,26 +2,29 @@
 import Header from "@/components/tabs/Header";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import {
-    Pressable,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    View,
-} from "react-native";
+import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 
 type Interest = { id: string; label: string; emoji: string };
 
 const ALL_INTERESTS: Interest[] = [
-    { id: "art", label: "Art", emoji: "🎨" },
-    { id: "gaming", label: "Gaming", emoji: "🎮" },
-    { id: "music", label: "Music", emoji: "🎵" },
-    { id: "travel", label: "Travel", emoji: "✈️" },
-    { id: "movies", label: "Movies", emoji: "🎬" },
-    { id: "fitness", label: "Fitness", emoji: "🏋️" },
-    { id: "photography", label: "Photography", emoji: "📷" },
-    { id: "baking", label: "Baking", emoji: "🧁" },
+    { id: "beach", label: "Beach", emoji: "🏖️" },
+    { id: "mountains", label: "Mountains", emoji: "⛰️" },
+    { id: "city_trips", label: "City Trips", emoji: "🏙️" },
+    { id: "road_trips", label: "Road Trips", emoji: "🚗" },
+    { id: "camping", label: "Camping", emoji: "🏕️" },
+    { id: "hiking", label: "Hiking", emoji: "🥾" },
+    { id: "cruises", label: "Cruises", emoji: "🛳️" },
+    { id: "cultural", label: "Cultural Tours", emoji: "🏛️" },
+    { id: "safari", label: "Safari", emoji: "🦁" },
+    { id: "skiing", label: "Skiing", emoji: "🎿" },
+    { id: "islands", label: "Island Hopping", emoji: "🏝️" },
+    { id: "food", label: "Food Trips", emoji: "🍜" },
+    { id: "adventure", label: "Adventure", emoji: "🪂" },
+    { id: "wellness", label: "Wellness Retreats", emoji: "🧘" },
+    { id: "festivals", label: "Festivals", emoji: "🎉" },
+    { id: "wildlife", label: "Wildlife", emoji: "🐘" },
 ];
+
 
 const MIN_REQUIRED = 3;
 
@@ -48,14 +51,17 @@ export default function PickInterests() {
     };
 
     return (
-        <SafeAreaView className="flex-1 bg-neutral-50">
-            <Header title="Pick Your Interests" />
-            <View className="flex-1">
+        <SafeAreaView className="flex-1 bg-neutral-50">>
+            <View className="flex-1 pl-3 pr-3 ">
                 <ScrollView
                     contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <Text className="mt-3 text-neutral-500">
+                    <View className="pt-3 pb-3 rounded-full">
+                        <Header title="Pick Your Interests" />
+                    </View>
+
+                    <Text className="pt-5  text-black font-semibold text-xl">
                         Select at least {MIN_REQUIRED} topics you're interested in
                     </Text>
 
@@ -76,11 +82,11 @@ export default function PickInterests() {
                                 >
                                     <Text
                                         className={[
-                                            "text-base",
-                                            isSelected ? "text-white font-semibold" : "text-neutral-800",
+                                            "text-base text-lg",
+                                            isSelected ? "text-white font-bold" : "text-neutral-800",
                                         ].join(" ")}
                                     >
-                                        {item.emoji} {item.label}
+                                        {item.label}
                                     </Text>
                                 </Pressable>
                             );
@@ -90,11 +96,11 @@ export default function PickInterests() {
                     {/* Helper line */}
                     <View className="mt-2">
                         {!canContinue ? (
-                            <Text className="text-red-600">
+                            <Text className="text-red-600 font-bold text-xl">
                                 {remaining} more to go…
                             </Text>
                         ) : (
-                            <Text className="text-green-700">Great! You can continue.</Text>
+                            <Text className="text-green-700 text-xl font-bold">Great! You can continue.</Text>
                         )}
                     </View>
                 </ScrollView>
