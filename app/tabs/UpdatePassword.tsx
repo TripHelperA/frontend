@@ -28,8 +28,37 @@ export default function UpdatePassword() {
             Alert.alert("Error", "Please fill in all fields.");
             return false;
         }
+
         if (newPassword !== confirm) {
             Alert.alert("Error", "New password and confirmation do not match.");
+            return false;
+        }
+
+        // Password rules
+        const minLength = 8;
+        const hasNumber = /[0-9]/.test(newPassword);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(newPassword);
+        const hasUpper = /[A-Z]/.test(newPassword);
+        const hasLower = /[a-z]/.test(newPassword);
+
+        if (newPassword.length < minLength) {
+            Alert.alert("Error", `Password must be at least ${minLength} characters long.`);
+            return false;
+        }
+        if (!hasNumber) {
+            Alert.alert("Error", "Password must contain at least one number.");
+            return false;
+        }
+        if (!hasSpecial) {
+            Alert.alert("Error", "Password must contain at least one special character.");
+            return false;
+        }
+        if (!hasUpper) {
+            Alert.alert("Error", "Password must contain at least one uppercase letter.");
+            return false;
+        }
+        if (!hasLower) {
+            Alert.alert("Error", "Password must contain at least one lowercase letter.");
             return false;
         }
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-import { confirmSignUp, resendSignUpCode, signIn, signUp } from "aws-amplify/auth";
+import { confirmSignUp, resendSignUpCode, signIn, signOut, signUp } from "aws-amplify/auth";
 
 const backgroundImage = require("../../assets/backgrounds/background3.jpg");
 
@@ -12,6 +12,22 @@ enum Step {
     Form = "form",
     Confirm = "confirm",
 }
+
+const ATTRIBUTE_KEYS = [
+    "algo_romantic",
+    "algo_adventurous",
+    "algo_relaxation",
+    "algo_cultural",
+    "algo_gastronomic",
+    "algo_nature",
+    "algo_entertaining",
+    "algo_modern",
+] as const;
+
+const DEFAULT_CUSTOMS: Record<string, string> = Object.fromEntries(
+    ATTRIBUTE_KEYS.map(k => [`custom:${k}`, "4"])
+);
+
 
 export default function Register() {
     const router = useRouter();
@@ -33,14 +49,18 @@ export default function Register() {
 
         try {
             setLoading(true);
+            await signOut({ global: true });
             await signUp({
                 username: email,
                 password,
                 options: {
-                    userAttributes: { email } // ensure email attribute is stored
-                }
+                    userAttributes: {
+                        email,
+                        ...DEFAULT_CUSTOMS, // initialize all custom attrs to "4"
+                    },
+                },
             });
-            setStep(Step.Confirm); // move to confirmation screen
+            setStep(Step.Confirm);
         } catch (e: any) {
             setError(e.message ?? "Sign up failed.");
         } finally {
@@ -54,8 +74,8 @@ export default function Register() {
         try {
             setLoading(true);
             await confirmSignUp({ username: email, confirmationCode: code });
-            const user = await signIn({ username: email, password });
-            router.replace("/tabs/PickInterest");
+            await signIn({ username: email, password });
+            router.replace("/login/PickInterest");
         } catch (e: any) {
             setError(e.message ?? "Confirmation failed.");
         } finally {
