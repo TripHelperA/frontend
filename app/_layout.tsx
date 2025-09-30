@@ -14,6 +14,4 @@ export default function RootLayout() {
             <Stack initialRouteName="login" screenOptions={{ headerShown: false }} />
         </GluestackUIProvider>
     )
-
-
 }

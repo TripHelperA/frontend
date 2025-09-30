@@ -1,30 +1,40 @@
-// app/onboarding/PickInterests.tsx
 import Header from "@/components/tabs/Header";
+import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 
-type Interest = { id: string; label: string; emoji: string };
-
-const ALL_INTERESTS: Interest[] = [
-    { id: "beach", label: "Beach", emoji: "🏖️" },
-    { id: "mountains", label: "Mountains", emoji: "⛰️" },
-    { id: "city_trips", label: "City Trips", emoji: "🏙️" },
-    { id: "road_trips", label: "Road Trips", emoji: "🚗" },
-    { id: "camping", label: "Camping", emoji: "🏕️" },
-    { id: "hiking", label: "Hiking", emoji: "🥾" },
-    { id: "cruises", label: "Cruises", emoji: "🛳️" },
-    { id: "cultural", label: "Cultural Tours", emoji: "🏛️" },
-    { id: "safari", label: "Safari", emoji: "🦁" },
-    { id: "skiing", label: "Skiing", emoji: "🎿" },
-    { id: "islands", label: "Island Hopping", emoji: "🏝️" },
-    { id: "food", label: "Food Trips", emoji: "🍜" },
-    { id: "adventure", label: "Adventure", emoji: "🪂" },
-    { id: "wellness", label: "Wellness Retreats", emoji: "🧘" },
-    { id: "festivals", label: "Festivals", emoji: "🎉" },
-    { id: "wildlife", label: "Wildlife", emoji: "🐘" },
+const attributes = [
+    "algo_romantic",
+    "algo_adventurous",
+    "algo_relaxation",
+    "algo_cultural",
+    "algo_gastronomic",
+    "algo_nature",
+    "algo_entertaining",
+    "algo_modern",
 ];
 
+type Interest = { id: string; label: string; emoji: string, attribute: string };
+
+const ALL_INTERESTS: Interest[] = [
+    { id: "beach", label: "Beach", emoji: "🏖️", attribute: attributes[0] },
+    { id: "mountains", label: "Mountains", emoji: "⛰️", attribute: attributes[1] },
+    { id: "city_trips", label: "City Trips", emoji: "🏙️", attribute: attributes[2] },
+    { id: "road_trips", label: "Road Trips", emoji: "🚗", attribute: attributes[3] },
+    { id: "camping", label: "Camping", emoji: "🏕️", attribute: attributes[4] },
+    { id: "hiking", label: "Hiking", emoji: "🥾", attribute: attributes[5] },
+    { id: "cruises", label: "Cruises", emoji: "🛳️", attribute: attributes[6] },
+    { id: "cultural", label: "Cultural Tours", emoji: "🏛️", attribute: attributes[7] },
+    { id: "safari", label: "Safari", emoji: "🦁", attribute: attributes[0] },
+    { id: "skiing", label: "Skiing", emoji: "🎿", attribute: attributes[1] },
+    { id: "islands", label: "Island Hopping", emoji: "🏝️", attribute: attributes[2] },
+    { id: "food", label: "Food Trips", emoji: "🍜", attribute: attributes[3] },
+    { id: "adventure", label: "Adventure", emoji: "🪂", attribute: attributes[4] },
+    { id: "wellness", label: "Wellness Retreats", emoji: "🧘", attribute: attributes[5] },
+    { id: "festivals", label: "Festivals", emoji: "🎉", attribute: attributes[6] },
+    { id: "wildlife", label: "Wildlife", emoji: "🐘", attribute: attributes[7] },
+];
 
 const MIN_REQUIRED = 3;
 
@@ -42,12 +52,40 @@ export default function PickInterests() {
 
     const canContinue = selected.size >= MIN_REQUIRED;
     const remaining = useMemo(() => Math.max(0, MIN_REQUIRED - selected.size), [selected.size]);
+    const clamp = (n: number, min = 1, max = 10) => Math.max(min, Math.min(max, n));
 
-    const onContinue = () => {
-        const chosen = ALL_INTERESTS.filter(i => selected.has(i.id));
-        // TODO: persist to backend / AsyncStorage if needed
-        console.log("Selected interests:", chosen);
-        router.push("/login/Login"); // or next onboarding step
+    const onContinue = async () => {
+        // count how many times each attribute should be incremented
+        const incBy: Record<string, number> = {};
+        ALL_INTERESTS.forEach(i => {
+            if (selected.has(i.id)) {
+                incBy[i.attribute] = (incBy[i.attribute] ?? 0) + 1;
+            }
+        });
+
+        if (Object.keys(incBy).length === 0) {
+            // nothing selected; optionally return early
+            return;
+        }
+
+        // fetch current user attributes
+        const current = await fetchUserAttributes();
+
+        // build update payload with clamped values (min=1, max=10)
+        const updates: Record<string, string> = {};
+        for (const [attr, add] of Object.entries(incBy)) {
+            const key = `custom:${attr}`;
+
+            // If the attribute is missing, treat baseline as 1 (your min), then add.
+            // If you prefer "missing means 0", change baseline to 0.
+            const baseline = current[key] !== undefined ? parseInt(current[key]!, 10) : 1;
+
+            const nextVal = clamp(baseline + add, 1, 10);
+            updates[key] = String(nextVal);
+        }
+
+        await updateUserAttributes({ userAttributes: updates });
+        router.replace("/tabs/Home");
     };
 
     return (
@@ -86,7 +124,7 @@ export default function PickInterests() {
                                             isSelected ? "text-white font-bold" : "text-neutral-800",
                                         ].join(" ")}
                                     >
-                                        {item.label}
+                                        {item.emoji} {item.label}
                                     </Text>
                                 </Pressable>
                             );
