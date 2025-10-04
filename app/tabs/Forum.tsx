@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import ForumContent from '../../components/tabs/forum-content';
+import ForumContent from '../../components/tabs/ForumContent';
 
 const Forum = () => {
     const router = useRouter();

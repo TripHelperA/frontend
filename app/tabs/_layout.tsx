@@ -43,7 +43,6 @@ export default function TabLayout() {
             <Tabs.Screen
                 name="Forum"
                 options={{
-                    href: null,
                     title: 'Forum',
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
                 }}
