@@ -34,16 +34,16 @@ export default function TabLayout() {
                 }}
             />
             <Tabs.Screen
-                name="Settings"
-                options={{
-                    title: 'Settings',
-                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
-                }}
-            />
-            <Tabs.Screen
                 name="Forum"
                 options={{
                     title: 'Forum',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="comments" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="Settings"
+                options={{
+                    title: 'Settings',
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
                 }}
             />
@@ -68,6 +68,14 @@ export default function TabLayout() {
                 options={{
                     href: null,
                     title: 'UpdatePassword',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="PostDetail"
+                options={{
+                    href: null,
+                    title: 'PostDetail',
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
                 }}
             />
