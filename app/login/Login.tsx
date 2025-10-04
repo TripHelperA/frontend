@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from "react-native-responsive-screen";
 
-import TripInputPanel from "@/components/tabs/TripPlannerForm";
 import { ConsoleLogger } from 'aws-amplify/utils';
 
 ConsoleLogger.LOG_LEVEL = 'DEBUG';
@@ -20,21 +19,6 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-
-    const handleSearch = (data: { from: string; to: string; stops: string }) => {
-        console.log("Searching for:", data);
-        setTripDetails({ from: data.from, to: data.to });
-
-    };
-
-    const [tripDetails, setTripDetails] = useState({
-        from: "Taksim Square, Istanbul",
-        to: "Sultanahmet Square, Istanbul",
-    });
-
-    const handleAiSearch = (query: string) => {
-        console.log("AI Search Query:", query);
-    };
 
     const handleLogin = async () => {
 
@@ -81,12 +65,6 @@ export default function Login() {
                         autoCapitalize="none"
                     />
                 </View>
-
-                <TripInputPanel
-                    initialTripDetails={tripDetails}
-                    onSearch={handleSearch} // These will call the backend
-                    onAiSearch={handleAiSearch}
-                />
 
                 {/* Password */}
                 <View className="bg-black/20 p-3 rounded-3xl w-full my-3">

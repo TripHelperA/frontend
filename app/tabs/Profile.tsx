@@ -8,76 +8,74 @@ import SectionTitle from "@/components/tabs/SectionTitle";
 import { fetchUserAttributes, getCurrentUser } from "@aws-amplify/auth";
 import { generateClient } from "aws-amplify/api";
 
+import { useFocusEffect } from "@react-navigation/native";
 import { Buffer } from "buffer";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-
-import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { router } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Button, Image, SafeAreaView, ScrollView, View } from "react-native";
 
-// Buffer polyfill for React Native
+// ---- Polyfills ----
 if (!(global as any).Buffer) (global as any).Buffer = Buffer;
 
-// ---- GraphQL (Amplify v2 client style) ----
+// ---- GraphQL (Amplify v2 style) ----
 const client = generateClient();
 
 const GENERATE_SIGNED_URL = /* GraphQL */ `
-  mutation GenerateSignedUrl($type: String!, $id: ID!, $mode: String!) {
-    generateSignedUrl(type: $type, id: $id, mode: $mode) {
-      url
-      key
+    mutation GenerateSignedUrl($type: String!, $id: ID!, $mode: String!) {
+        generateSignedUrl(type: $type, id: $id, mode: $mode) {
+        url
+        key
+        }
     }
-  }
-`;
+    `;
 
 export default function Profile() {
     const [name, setName] = useState("");
     const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
-    // Load text attributes from Cognito (name, family_name)
     const loadAttributes = useCallback(async () => {
         try {
             const attrs = await fetchUserAttributes();
+            console.log("Cognito attributes:", attrs);
             setName(attrs.name ?? "");
             setLastName(attrs.family_name ?? "");
-            // We intentionally do NOT use attrs.picture (it may be stale or an expired URL).
+            setEmail(attrs.email ?? "");
         } catch (e) {
             console.warn("fetchUserAttributes error:", e);
         }
     }, []);
 
-    // Fetch a presigned GET URL for the user's avatar from S3 via AppSync/Lambda
     const loadAvatarFromS3 = useCallback(async () => {
         try {
-            const user = await getCurrentUser();
-            const userId = user.userId;
-
+            const { userId } = await getCurrentUser();
             const { data } = await client.graphql({
                 query: GENERATE_SIGNED_URL,
                 variables: { type: "user", id: userId, mode: "view" },
             });
 
-            // Expecting a presigned GET url from backend
-            const signedViewUrl = data.generateSignedUrl.url;
+            const signedViewUrl = data?.generateSignedUrl?.url ?? null;
             setAvatarUrl(signedViewUrl);
         } catch (e) {
             console.warn("loadAvatarFromS3 error:", e);
-            // If there's no image yet, just show nothing
             setAvatarUrl(null);
         }
     }, []);
 
-    // Load attributes + avatar each time screen focuses
+    useEffect(() => {
+        loadAttributes();
+        loadAvatarFromS3();
+    }, [loadAttributes, loadAvatarFromS3]);
+
     useFocusEffect(
         useCallback(() => {
             loadAttributes();
-            loadAvatarFromS3();
         }, [loadAttributes, loadAvatarFromS3])
     );
 
-    // Pick image, upload via presigned PUT, then refresh presigned GET for display
     const pickImage = async () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -98,21 +96,13 @@ export default function Profile() {
             const uri = asset?.uri;
             if (!uri) return;
 
-            // (Simple path) Treat upload as JPEG to match your presign (ensure your Lambda presigns with ContentType "image/jpeg")
-            const contentType = "image/jpeg";
-
-            const user = await getCurrentUser();
-            const userId = user.userId;
-
-            // 1) Presign for UPLOAD (PUT)
+            const { userId } = await getCurrentUser();
             const { data: up } = await client.graphql({
                 query: GENERATE_SIGNED_URL,
                 variables: { type: "user", id: userId, mode: "upload" },
             });
 
             const uploadUrl = up.generateSignedUrl.url;
-
-            // 2) Read picked file and upload
             const base64 = await FileSystem.readAsStringAsync(uri, {
                 encoding: FileSystem.EncodingType.Base64,
             });
@@ -120,18 +110,12 @@ export default function Profile() {
 
             const res = await fetch(uploadUrl, {
                 method: "PUT",
-                headers: { "Content-Type": contentType },
+                headers: { "Content-Type": "image/jpeg" },
                 body,
             });
-            if (!res.ok) throw new Error(`Upload failed (HTTP ${res.status})`);
+            if (!res.ok) throw new Error(`Upload failed (${res.status})`);
 
-            // 3) Get a fresh presigned GET for viewing
-            const { data: view } = await client.graphql({
-                query: GENERATE_SIGNED_URL,
-                variables: { type: "user", id: userId, mode: "view" },
-            });
-
-            setAvatarUrl(view.generateSignedUrl.url);
+            await loadAvatarFromS3(); // refresh UI
             Alert.alert("✅ Uploaded", "Profile image uploaded successfully!");
         } catch (err) {
             console.error("Upload error:", err);
@@ -142,7 +126,6 @@ export default function Profile() {
     return (
         <SafeAreaView className="flex-1 bg-neutral-50">
             <Header title="Profile" />
-
             <ScrollView>
                 <View className="px-4">
                     <View className="px-4 items-center">
@@ -159,17 +142,17 @@ export default function Profile() {
                         <SectionTitle>Personal Information</SectionTitle>
                         <Card>
                             <ListRowChevron
-                                label="Name"
+                                label="First Name"
                                 value={name}
                                 onPress={() =>
                                     router.push({
-                                        pathname: "/tabs/EditField", // ✅ removed leading space
+                                        pathname: "/tabs/EditField",
                                         params: { field: "name", value: name },
                                     })
                                 }
                             />
                             <ListRowChevron
-                                label="Surname"
+                                label="Family Name"
                                 value={lastName}
                                 onPress={() =>
                                     router.push({
@@ -178,6 +161,7 @@ export default function Profile() {
                                     })
                                 }
                             />
+                            <ListRowChevron label="Email" value={email} />
                         </Card>
                     </View>
 

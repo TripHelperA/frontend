@@ -21,12 +21,13 @@ type Props = {
 };
 
 const DEFAULT_IMAGES = [
-    "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1600&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1600&auto=format&fit=crop",
+    require("../../assets/backgrounds/background1.jpg"),
+    require("../../assets/backgrounds/background2.jpg"),
+    require("../../assets/backgrounds/background3.jpg"),
+    require("../../assets/backgrounds/background4.jpg"),
+    require("../../assets/backgrounds/background5.jpg"),
+    require("../../assets/backgrounds/background6.jpg"),
 ];
-
 export default function LandingScreen({
     images,
     brand = "Allah",
@@ -103,11 +104,11 @@ export default function LandingScreen({
                             />
 
                             {/* brand pill */}
-                            <View className="absolute top-3 left-0 right-0 items-center">
+                            {/* <View className="absolute top-3 left-0 right-0 items-center">
                                 <Text className="px-3 py-1 rounded-full bg-white/35 text-white font-extrabold text-2xl tracking-wide drop-shadow">
                                     {brand}
                                 </Text>
-                            </View>
+                            </View> */}
 
                             {/* hero text */}
                             <View className="absolute left-5 right-5 bottom-8">
@@ -144,7 +145,7 @@ export default function LandingScreen({
 
                                 <Pressable
                                     onPress={onSearchTrips}
-                                    className="flex-1 items-center justify-center rounded-2xl py-2 bg-white border border-black/5 shadow active:opacity-90"
+                                    className="flex-1 items-center justify-center rounded-2xl py-2 bg-sky-400 border border-black/5 shadow active:opacity-90"
                                 >
                                     <Text className="text-neutral-900 font-bold text-base">Search Trips</Text>
                                 </Pressable>
@@ -153,7 +154,7 @@ export default function LandingScreen({
                     </View>
 
                     {/* FEATURES */}
-                    <View className="bg-white rounded-2xl p-4 gap-3 shadow-md">
+                    {/* <View className="bg-white rounded-2xl p-4 gap-3 shadow-md">
                         <Text className="text-center text-lg font-extrabold text-neutral-900">
                             Why travelers choose {brand}
                         </Text>
@@ -180,7 +181,7 @@ export default function LandingScreen({
                                 colorTo="#ddd6fe"
                             />
                         </View>
-                    </View>
+                    </View> */}
 
                     {/* THEMES */}
                     <View className="bg-white rounded-2xl p-4 gap-3 shadow-md">

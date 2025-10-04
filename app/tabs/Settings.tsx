@@ -6,15 +6,26 @@ import { ListRowChevron } from "@/components/tabs/ListRowChevron";
 import { ListRowSwitch } from "@/components/tabs/ListRowSwitch";
 import ProfileCard from "@/components/tabs/ProfileCard";
 import SectionTitle from "@/components/tabs/SectionTitle";
-import { fetchAuthSession, fetchUserAttributes, signOut } from "@aws-amplify/auth";
-import { useFocusEffect } from "@react-navigation/native";
-import { generateClient } from 'aws-amplify/api';
+import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut } from "@aws-amplify/auth";
+import { generateClient } from "aws-amplify/api";
 
-import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, SafeAreaView, ScrollView, View } from "react-native";
 
+// ---------- GraphQL ----------
+const client = generateClient();
 
+const GENERATE_SIGNED_URL = /* GraphQL */ `
+  mutation GenerateSignedUrl($type: String!, $id: ID!, $mode: String!) {
+    generateSignedUrl(type: $type, id: $id, mode: $mode) {
+      url
+      key
+    }
+  }
+`;
+
+// (kept) example mutation you already had
 const MAIN_LOGIC = /* GraphQL */ `
   mutation mainLogicRequest($input: mainLogicUserInput!) {
     mainLogicRequest(input: $input)
@@ -26,34 +37,32 @@ export async function testMainLogicRequest() {
     const { tokens } = await fetchAuthSession();
     const idToken = tokens?.idToken?.toString();
     if (!idToken) {
-        console.warn('No IdToken — are you signed in?');
+        console.warn("No IdToken — are you signed in?");
         return;
     }
-
-    // create the client AFTER configure has run
-    const client = generateClient();
 
     try {
         const resp = await client.graphql({
             query: MAIN_LOGIC,
             variables: {
                 input: {
-                    startingPlace: 'New York',
-                    endPlace: 'Boston',
-                    userInput: 'fastest route',
-                    title: 'NYC to BOS test',
+                    startingPlace: "New York",
+                    endPlace: "Boston",
+                    userInput: "fastest route",
+                    title: "NYC to BOS test",
                 },
             },
-            authMode: 'userPool',
+            authMode: "userPool",
         });
 
-        console.log('Full GraphQL response:', JSON.stringify(resp, null, 2));
+        console.log("Full GraphQL response:", JSON.stringify(resp, null, 2));
         return resp.data?.mainLogicRequest ?? null;
     } catch (e) {
-        console.error('GraphQL call failed:', e);
+        console.error("GraphQL call failed:", e);
         throw e;
     }
 }
+
 export default function Settings() {
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [pushNotifications, setPushNotifications] = useState(true);
@@ -74,10 +83,37 @@ export default function Settings() {
         }
     }, []);
 
+    // Fetch a presigned GET URL for the user's avatar from S3 via AppSync/Lambda
+    const loadAvatarFromS3 = useCallback(async () => {
+        try {
+            const user = await getCurrentUser();
+            const userId = user.userId;
+
+            const { data } = await client.graphql({
+                query: GENERATE_SIGNED_URL,
+                variables: { type: "user", id: userId, mode: "view" },
+            });
+
+            const signedViewUrl: string | undefined = data?.generateSignedUrl?.url ?? undefined;
+
+            setAvatarUri(signedViewUrl);
+        } catch (e) {
+            console.warn("loadAvatarFromS3 error:", e);
+            setAvatarUri(undefined);
+        }
+    }, []);
+
+    // Load attributes + avatar whenever the screen focuses
+    useEffect(() => {
+        loadAttributes();
+        loadAvatarFromS3();
+    }, [loadAttributes, loadAvatarFromS3]);
+
     useFocusEffect(
         useCallback(() => {
+            // Re-fetch to reflect any changes done on other screens
             loadAttributes();
-        }, [loadAttributes])
+        }, [loadAttributes, loadAvatarFromS3])
     );
 
     const handleSignout = async () => {
@@ -90,7 +126,6 @@ export default function Settings() {
         }
     };
 
-
     return (
         <SafeAreaView className="flex-1 bg-neutral-50">
             <Header title="Settings" />
@@ -101,8 +136,9 @@ export default function Settings() {
                         <SectionTitle>Profile</SectionTitle>
                         <Card>
                             <ProfileCard
-                                avatarUri="https://images.unsplash.com/photo-1633332755192-727a05c4013d?..."
-                                name={`${name} ${lastName}`}
+                                // Use fetched avatar; your component can show a fallback if undefined
+                                avatarUri={avatarUri}
+                                name={`${name} ${lastName}`.trim()}
                                 email={email}
                                 onPress={() => router.replace("/tabs/Profile")}
                             />
@@ -110,9 +146,9 @@ export default function Settings() {
                     </View>
 
                     <View className="py-3">
-                        <SectionTitle>Preferences</SectionTitle >
+                        <SectionTitle>Preferences</SectionTitle>
                         <Card>
-                            <ListRowChevron label="Language" value="English" onPress={() => { router.push("/tabs/SelectLanguage") }} />
+                            <ListRowChevron label="Language" value="English" onPress={() => { router.push("/tabs/SelectLanguage"); }} />
                             <ListRowSwitch label="Email Notifications" value={emailNotifications} onValueChange={setEmailNotifications} />
                             <ListRowSwitch label="Push Notifications" value={pushNotifications} onValueChange={setPushNotifications} />
                         </Card>
