@@ -6,12 +6,54 @@ import { ListRowChevron } from "@/components/tabs/ListRowChevron";
 import { ListRowSwitch } from "@/components/tabs/ListRowSwitch";
 import ProfileCard from "@/components/tabs/ProfileCard";
 import SectionTitle from "@/components/tabs/SectionTitle";
-import { fetchUserAttributes, signOut } from "@aws-amplify/auth";
+import { fetchAuthSession, fetchUserAttributes, signOut } from "@aws-amplify/auth";
 import { useFocusEffect } from "@react-navigation/native";
+import { generateClient } from 'aws-amplify/api';
+
 import { router } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, SafeAreaView, ScrollView, View } from "react-native";
 
+
+const MAIN_LOGIC = /* GraphQL */ `
+  mutation mainLogicRequest($input: mainLogicUserInput!) {
+    mainLogicRequest(input: $input)
+  }
+`;
+
+export async function testMainLogicRequest() {
+    // sanity: confirm we actually have a user + IdToken
+    const { tokens } = await fetchAuthSession();
+    const idToken = tokens?.idToken?.toString();
+    if (!idToken) {
+        console.warn('No IdToken — are you signed in?');
+        return;
+    }
+
+    // create the client AFTER configure has run
+    const client = generateClient();
+
+    try {
+        const resp = await client.graphql({
+            query: MAIN_LOGIC,
+            variables: {
+                input: {
+                    startingPlace: 'New York',
+                    endPlace: 'Boston',
+                    userInput: 'fastest route',
+                    title: 'NYC to BOS test',
+                },
+            },
+            authMode: 'userPool',
+        });
+
+        console.log('Full GraphQL response:', JSON.stringify(resp, null, 2));
+        return resp.data?.mainLogicRequest ?? null;
+    } catch (e) {
+        console.error('GraphQL call failed:', e);
+        throw e;
+    }
+}
 export default function Settings() {
     const [emailNotifications, setEmailNotifications] = useState(true);
     const [pushNotifications, setPushNotifications] = useState(true);
@@ -62,7 +104,7 @@ export default function Settings() {
                                 avatarUri="https://images.unsplash.com/photo-1633332755192-727a05c4013d?..."
                                 name={`${name} ${lastName}`}
                                 email={email}
-                                onPress={() => router.back()}
+                                onPress={() => router.replace("/tabs/Profile")}
                             />
                         </Card>
                     </View>
@@ -79,7 +121,14 @@ export default function Settings() {
                     <View className="py-3">
                         <SectionTitle>Resources</SectionTitle>
                         <Card>
-                            <ListRowChevron label="Contact Us" onPress={() => { }} />
+                            <ListRowChevron
+                                label="Contact Us"
+                                onPress={async () => {
+                                    const response = await testMainLogicRequest();
+                                    console.log("Contact Us response:", response);
+                                }}
+                            />
+
                             <ListRowChevron label="Report Bug" onPress={() => { }} />
                             <ListRowChevron label="Rate in App Store" onPress={() => { }} />
                             <ListRowChevron label="Terms and Privacy" onPress={() => { }} />

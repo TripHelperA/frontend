@@ -11,6 +11,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@aws-amplify/api": "^6.3.19",
+    "@aws-amplify/api-graphql": "^4.8.0",
     "@aws-amplify/react-native": "^1.1.10",
     "@aws-amplify/ui-react-native": "^2.6.0",
     "@expo/html-elements": "^0.10.1",
