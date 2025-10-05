@@ -1,4 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Animated,
@@ -137,7 +138,7 @@ export default function LandingScreen({
                         <View className="px-5 pt-4 pb-3">
                             <View className="flex-row gap-3">
                                 <Pressable
-                                    onPress={onPlanTrip}
+                                    onPress={() => router.replace("/tabs/PlanATrip")}
                                     className="flex-1 items-center justify-center rounded-2xl py-2 bg-[#fb7a36] shadow active:opacity-90"
                                 >
                                     <Text className="text-white font-bold text-base">Plan a Trip</Text>

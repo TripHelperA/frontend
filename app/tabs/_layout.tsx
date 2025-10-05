@@ -40,6 +40,7 @@ export default function TabLayout() {
                     tabBarIcon: ({ color }) => <FontAwesome size={28} name="comments" color={color} />,
                 }}
             />
+
             <Tabs.Screen
                 name="Settings"
                 options={{
@@ -73,6 +74,14 @@ export default function TabLayout() {
             />
             <Tabs.Screen
                 name="PostDetail"
+                options={{
+                    href: null,
+                    title: 'PostDetail',
+                    tabBarIcon: ({ color }) => <FontAwesome size={28} name="cog" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="PlanATrip"
                 options={{
                     href: null,
                     title: 'PostDetail',
