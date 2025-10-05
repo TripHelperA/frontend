@@ -25,9 +25,6 @@ import {
 } from "../../graphql/forum";
 import ForumPostCard from "./ForumPostCard";
 
-// ---------- GraphQL (inlined) ----------
-
-
 // ---------- Types ----------
 type ForumPost = {
     id: string;
@@ -205,7 +202,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-            alert("Galeri izni gerekiyor.");
+            alert("Gallery permission is required.");
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -218,25 +215,25 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             setImageUri(result.assets[0].uri);
         }
     };
-
     const closeModal = () => {
         if (!submitting) {
             setAddOpen(false);
             setSelectedRouteId(null);
             setImageUri(null);
+            setDetails(""); // ← reset details so it doesn’t leak to next time
         }
     };
 
     // Make selected route sharable = "true" and optionally upload cover
     const handlePublishToForum = async () => {
         if (!selectedRouteId) {
-            alert("Lütfen bir rota seçin.");
+            alert("Please select a route.");
             return;
         }
 
         const selected = myNonSharable.find((r) => r.routeId === selectedRouteId);
         if (!selected) {
-            alert("Seçilen rota bulunamadı.");
+            alert("Selected route not found.");
             return;
         }
 
@@ -268,16 +265,20 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                     isOnTheRoute: l.isOnTheRoute,
                 })) ?? [];
 
+            // Use the details from the modal (already prefilled when user selects a route)
+            const descriptionToSave = details;
+
             await client.graphql({
                 query: UPDATE_ROUTE,
                 variables: {
                     routeId: selected.routeId,
                     input: {
                         title: selected.title,
-                        description: selected.description ?? "",
-                        sharable: "true", // <-- flip to true
+                        description: details.trim() !== "" ? details.trim() : (selected.description ?? ""),
+                        sharable: "true",
                         locations: locationsInput,
                     },
+
                 },
             });
 
@@ -286,7 +287,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             closeModal();
         } catch (e: any) {
             console.warn("Publish route error:", e);
-            alert(e?.message ?? "Rota paylaşılamadı.");
+            alert(e?.message ?? "Failed to publish route.");
         } finally {
             setSubmitting(false);
         }
@@ -304,7 +305,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             typeof post.image === "number" ? raw : encodeURIComponent(raw);
 
         router.push({
-            pathname: "post-detail",
+            pathname: "/tabs/PostDetail",
             params: {
                 title: post.title,
                 description: post.description,
@@ -319,7 +320,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             <Stack.Screen
                 options={{
                     headerShown: true,
-                    title: "Rota Forumu",
+                    title: "Route Forum",
                     headerTitleAlign: "center",
                     headerStyle: { backgroundColor: palette.primary },
                     headerTintColor: "#FFFFFF",
@@ -332,10 +333,10 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
 
             <View style={styles.container}>
                 <View style={styles.sectionHeader}>
-                    <Text style={styles.eyebrow}>KEŞFET</Text>
-                    <Text style={styles.title}>Rota ve Deneyimler</Text>
+                    <Text style={styles.eyebrow}>EXPLORE</Text>
+                    <Text style={styles.title}>Routes & Experiences</Text>
                     <Text style={styles.subtitle}>
-                        İlham verici topluluk rotalarını gözden geçir.
+                        Browse inspiring community routes.
                     </Text>
                 </View>
 
@@ -343,7 +344,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                     <View style={{ paddingTop: 24, alignItems: "center" }}>
                         <ActivityIndicator size="small" />
                         <Text style={{ marginTop: 8, color: palette.textMuted }}>
-                            Yükleniyor…
+                            Loading…
                         </Text>
                     </View>
                 ) : errText ? (
@@ -374,7 +375,6 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             </View>
 
             {/* Add to Forum Modal */}
-            {/* Add to Forum Modal */}
             <Modal
                 visible={addOpen}
                 animationType="slide"
@@ -383,9 +383,9 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
             >
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalCard}>
-                        <Text style={styles.modalTitle}>Foruma Ekle</Text>
+                        <Text style={styles.modalTitle}>Add to Forum</Text>
                         <Text style={styles.inputLabel}>
-                            Mevcut rotalarınızdan birini seçin (şu an paylaşımsız)
+                            Select one of your existing routes (currently private)
                         </Text>
 
                         {/* Route picker list */}
@@ -396,7 +396,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                                 </View>
                             ) : myNonSharable.length === 0 ? (
                                 <Text style={{ color: palette.textMuted }}>
-                                    Paylaşıma kapalı hiçbir rotanız yok.
+                                    You don’t have any private routes.
                                 </Text>
                             ) : (
                                 <FlatList
@@ -410,7 +410,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                                             <Pressable
                                                 onPress={() => {
                                                     setSelectedRouteId(item.routeId);
-                                                    setDetails(item.description ?? ""); // ← prefill details
+                                                    setDetails(item.description ?? ""); // prefill
                                                 }}
                                                 style={[
                                                     styles.routeRow,
@@ -428,7 +428,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                                                         ]}
                                                         numberOfLines={1}
                                                     >
-                                                        {item.title || "Başlıksız Rota"}
+                                                        {item.title || "Untitled Route"}
                                                     </Text>
                                                     {!!item.description && (
                                                         <Text style={styles.routeDesc} numberOfLines={1}>
@@ -457,24 +457,24 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                         </View>
 
                         {/* Details (description) input */}
-                        <Text style={[styles.inputLabel, { marginTop: 10 }]}>Detaylar</Text>
+                        <Text style={[styles.inputLabel, { marginTop: 10 }]}>Details</Text>
                         <TextInput
                             value={details}
                             onChangeText={setDetails}
-                            placeholder="Bu rota hakkında detay ekleyin"
-                            style={[styles.pickerBox, , { height: 120, textAlignVertical: "top" }]}
+                            placeholder="Add details about this route"
+                            style={[styles.pickerBox, { height: 120, textAlignVertical: "top" }]}
                             multiline
                             placeholderTextColor={palette.textMuted}
                         />
 
                         {/* Optional cover image */}
                         <Text style={[styles.inputLabel, { marginTop: 10 }]}>
-                            Kapak görseli (opsiyonel)
+                            Cover image (optional)
                         </Text>
                         <Pressable onPress={pickImage} style={styles.imageButton}>
                             <Ionicons name="image" size={18} color="#FFFFFF" />
                             <Text style={styles.imageButtonText}>
-                                {imageUri ? "Görsel seçildi" : "Kapak görseli seç"}
+                                {imageUri ? "Image selected" : "Select cover image"}
                             </Text>
                         </Pressable>
 
@@ -485,7 +485,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                                 disabled={submitting}
                                 style={[styles.actionSecondary, submitting && { opacity: 0.6 }]}
                             >
-                                <Text style={styles.actionSecondaryText}>İptal</Text>
+                                <Text style={styles.actionSecondaryText}>Cancel</Text>
                             </Pressable>
 
                             <Pressable
@@ -499,7 +499,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
                                 {submitting ? (
                                     <ActivityIndicator />
                                 ) : (
-                                    <Text style={styles.actionPrimaryText}>Foruma Paylaş</Text>
+                                    <Text style={styles.actionPrimaryText}>Share to Forum</Text>
                                 )}
                             </Pressable>
                         </View>
