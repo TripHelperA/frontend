@@ -29,7 +29,7 @@ export default function RouteMapScreen() {
         longitudeDelta: 2,
     };
 
-    const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k";
+    const googleMapsApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
     return (
         <SafeAreaView style={{ flex: 1 }}>
