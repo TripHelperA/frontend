@@ -194,7 +194,7 @@ export default function Map() {
                     dataArray={routeMarkers}
                     googleMapsApiKey={
                         process.env.GOOGLE_MAPS_API_KEY ||
-                        "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k"
+                        ""
                     }
                     initialRegion={{
                         latitude: (startMarker ?? DEFAULT_START).latitude,
