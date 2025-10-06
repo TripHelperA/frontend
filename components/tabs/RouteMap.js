@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Image,
+    Linking,
     Modal,
     Pressable,
     StyleSheet,
@@ -16,7 +18,7 @@ import MapViewDirections from "react-native-maps-directions";
 import CustomCallout from "./CustomCallout";
 import { openInGoogleMaps } from "./openMap";
 
-/* ---------------- GraphQL: saveLocations ---------------- */
+/* ---------------- GraphQL ---------------- */
 const client = generateClient();
 
 const SAVE_LOCATIONS = /* GraphQL */ `
@@ -33,6 +35,28 @@ const SAVE_LOCATIONS = /* GraphQL */ `
   }
 `;
 
+const GET_PLACE_INFO = /* GraphQL */ `
+  query GetPlaceInfo($placeId: String!) {
+    getPlaceInfo(input: $placeId) {
+      title
+      latitude
+      longitude
+      rating
+      description
+      photoURL
+      reviews {
+        authorName
+        rating
+        text
+        relativeTime
+      }
+      # optionally supported by your backend:
+      # url
+      # website
+    }
+  }
+`;
+
 /* ---------------- SaveRouteModal (inline component) ---------------- */
 function SaveRouteModal({
     visible,
@@ -40,12 +64,12 @@ function SaveRouteModal({
     allValuesWithEnds,
     defaultTitle = "",
     defaultDescription = "",
-    defaultSharable = "PRIVATE", // <-- use "PUBLIC" | "PRIVATE"
+    defaultSharable = "PRIVATE",
     onSuccess,
 }) {
     const [title, setTitle] = useState(defaultTitle);
     const [description, setDescription] = useState(defaultDescription);
-    const [sharable, setSharable] = useState(defaultSharable); // "PUBLIC" | "PRIVATE"
+    const [sharable, setSharable] = useState(defaultSharable);
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState(null);
 
@@ -77,9 +101,7 @@ function SaveRouteModal({
         setErrorMsg(null);
 
         try {
-            // Map PUBLIC → "true", PRIVATE → "false"
             const sharableValue = sharable === "PUBLIC" ? "true" : "false";
-
             const { data } = await client.graphql({
                 query: SAVE_LOCATIONS,
                 variables: {
@@ -87,7 +109,7 @@ function SaveRouteModal({
                         title: title.trim(),
                         description: (description || "").trim() || null,
                         sharable: sharableValue,
-                        locations: locationsInput, // [{ placeId, isOnTheRoute, latitude, longitude }]
+                        locations: locationsInput,
                     },
                 },
             });
@@ -97,7 +119,8 @@ function SaveRouteModal({
             onClose();
         } catch (e) {
             console.error("saveLocations error:", e);
-            const msg = e?.errors?.[0]?.message || e?.message || "Failed to save route.";
+            const msg =
+                e?.errors?.[0]?.message || e?.message || "Failed to save route.";
             setErrorMsg(msg);
         } finally {
             setSubmitting(false);
@@ -129,7 +152,6 @@ function SaveRouteModal({
                         numberOfLines={3}
                     />
 
-                    {/* Toggle strictly between PUBLIC and PRIVATE */}
                     <Pressable
                         onPress={() => setSharable((s) => (s === "PRIVATE" ? "PUBLIC" : "PRIVATE"))}
                         style={modalStyles.toggle}
@@ -175,18 +197,27 @@ function SaveRouteModal({
 
 /* ---------------- Main Map Component ---------------- */
 export default function RouteMap({
-    googleMapsApiKey,
+    showSave,
+    googleMapsApiKey = "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k",
     initialRegion,
     initialData,
     showControls = true,
     defaultMode = "view",
-    fixedStart,
-    fixedEnd,
+    fixedStart, // { latitude, longitude, isOnTheRoute?, google_place_id? }
+    fixedEnd,   // { latitude, longitude, isOnTheRoute?, google_place_id? }
 }) {
     const mapRef = useRef(null);
 
+    /* Save modal */
     const [saveVisible, setSaveVisible] = useState(false);
 
+    /* View panel state */
+    const [placePanelVisible, setPlacePanelVisible] = useState(false);
+    const [placePanelLoading, setPlacePanelLoading] = useState(false);
+    const [placePanelError, setPlacePanelError] = useState(null);
+    const [placePanelData, setPlacePanelData] = useState(null);
+
+    /* Route data */
     const [allRouteData, setAllRouteData] = useState(initialData ?? {});
     useEffect(() => {
         if (initialData) setAllRouteData(initialData);
@@ -241,11 +272,73 @@ export default function RouteMap({
                 id,
                 latitude: v.latitude,
                 longitude: v.longitude,
-                isOnTheRoute: true,
+                isOnTheRoute: true, // visual pin kept interactive but logically "suggested"
                 google_place_id: v.google_place_id,
             }));
     }, [allRouteData]);
 
+    /* -------- View panel loaders -------- */
+    const fetchPlaceInfo = async (placeId) => {
+        const { data } = await client.graphql({
+            query: GET_PLACE_INFO,
+            variables: { placeId },
+        });
+        return data?.getPlaceInfo ?? null;
+    };
+
+    const openPlacePanelForId = async (id) => {
+        const m = allRouteData?.[id];
+        if (!m || !m.google_place_id) {
+            setPlacePanelData(null);
+            setPlacePanelError("No place id found for this marker.");
+            setPlacePanelVisible(true);
+            return;
+        }
+
+        setSelectedId(id);
+        setPlacePanelVisible(true);
+        setPlacePanelLoading(true);
+        setPlacePanelError(null);
+
+        try {
+            const info = await fetchPlaceInfo(m.google_place_id);
+            setPlacePanelData(info);
+        } catch (e) {
+            console.error("getPlaceInfo error:", e);
+            const msg =
+                e?.errors?.[0]?.message || e?.message || "Failed to fetch place info.";
+            setPlacePanelError(msg);
+            setPlacePanelData(null);
+        } finally {
+            setPlacePanelLoading(false);
+        }
+    };
+
+    const openPlacePanelForFixed = async (fixedObj) => {
+        // Only acts in VIEW mode; otherwise no-op (immune to add/remove)
+        if (mode !== "view") return;
+        if (!fixedObj?.google_place_id) {
+            setPlacePanelVisible(true);
+            setPlacePanelData(null);
+            setPlacePanelError("No place id found for this marker.");
+            return;
+        }
+        setPlacePanelVisible(true);
+        setPlacePanelLoading(true);
+        setPlacePanelError(null);
+        try {
+            const info = await fetchPlaceInfo(fixedObj.google_place_id);
+            setPlacePanelData(info);
+        } catch (e) {
+            console.error("getPlaceInfo error:", e);
+            setPlacePanelError(e?.message || "Failed to fetch place info.");
+            setPlacePanelData(null);
+        } finally {
+            setPlacePanelLoading(false);
+        }
+    };
+
+    /* -------- Marker presses (MIDs only) -------- */
     const onPressGreen = (m) => {
         if (mode === "remove") {
             safeFlip(() => {
@@ -256,6 +349,8 @@ export default function RouteMap({
                 });
             });
             setSelectedId(null);
+        } else if (mode === "view") {
+            openPlacePanelForId(m.id);
         } else {
             setSelectedId(m.id);
         }
@@ -271,11 +366,14 @@ export default function RouteMap({
                 });
             });
             setSelectedId(m.id);
+        } else if (mode === "view") {
+            openPlacePanelForId(m.id);
         } else {
             setSelectedId(m.id);
         }
     };
 
+    /* -------- Polyline points -------- */
     const routePoints = useMemo(() => {
         const mids = markers.map((m) => ({
             latitude: m.latitude,
@@ -290,6 +388,7 @@ export default function RouteMap({
         return pts;
     }, [fixedStart, fixedEnd, markers]);
 
+    /* -------- Reusable button with stronger feedback -------- */
     const ControlButton = ({ title, onPress, disabled, active, style }) => (
         <Pressable
             onPress={onPress}
@@ -298,22 +397,36 @@ export default function RouteMap({
                 styles.btn,
                 active && styles.btnActive,
                 disabled && styles.btnDisabled,
-                pressed && !disabled && styles.btnPressed,
+                (pressed && !disabled) && styles.btnPressedStrong, // ⬅️ stronger pressed feedback
                 style,
             ]}
-            android_ripple={{ color: "rgba(255,255,255,0.15)" }}
+            android_ripple={{ color: "rgba(255,255,255,0.2)" }}
         >
             <Text
-                style={styles.btnText}
+                style={[styles.btnText, active && styles.btnTextActive, (disabled ? styles.btnTextDisabled : null)]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                minimumFontScale={0.8}
+                minimumFontScale={0.85}
                 maxFontSizeMultiplier={1.2}
             >
                 {title}
             </Text>
         </Pressable>
     );
+
+    /* -------- Helpers -------- */
+    const getPrimaryUrl = (d) => d?.url || d?.website || d?.photoURL || null;
+
+    const handleOpenUrl = async (rawUrl) => {
+        if (!rawUrl) return;
+        try {
+            const supported = await Linking.canOpenURL(rawUrl);
+            if (supported) await Linking.openURL(rawUrl);
+        } catch (e) {
+            console.warn("openURL error:", e);
+            Alert.alert("Couldn't open link");
+        }
+    };
 
     return (
         <View style={styles.container}>
@@ -324,22 +437,35 @@ export default function RouteMap({
                 initialRegion={initialRegion}
                 showsUserLocation
             >
+                {/* Fixed START (blue, immune to add/remove; viewable in View mode) */}
                 {fixedStart?.latitude && fixedStart?.longitude && (
-                    <Marker coordinate={fixedStart} pinColor="blue" tracksViewChanges={false}>
+                    <Marker
+                        coordinate={fixedStart}
+                        pinColor="#1E90FF" // dodger blue
+                        tracksViewChanges={false}
+                        onPress={() => openPlacePanelForFixed(fixedStart)} // only acts in view mode
+                    >
                         <Callout>
                             <Text>Start</Text>
                         </Callout>
                     </Marker>
                 )}
 
+                {/* Fixed END (blue, immune to add/remove; viewable in View mode) */}
                 {fixedEnd?.latitude && fixedEnd?.longitude && (
-                    <Marker coordinate={fixedEnd} pinColor="blue" tracksViewChanges={false}>
+                    <Marker
+                        coordinate={fixedEnd}
+                        pinColor="#1E90FF"
+                        tracksViewChanges={false}
+                        onPress={() => openPlacePanelForFixed(fixedEnd)} // only acts in view mode
+                    >
                         <Callout>
                             <Text>End</Text>
                         </Callout>
                     </Marker>
                 )}
 
+                {/* On-route markers (green) */}
                 {markers.map((m) => (
                     <Marker
                         key={`r-${m.id}`}
@@ -353,6 +479,7 @@ export default function RouteMap({
                     </Marker>
                 ))}
 
+                {/* Suggested markers (red) */}
                 {suggestedMarkers.map((m) => (
                     <Marker
                         key={`s-${m.id}`}
@@ -366,6 +493,7 @@ export default function RouteMap({
                     </Marker>
                 ))}
 
+                {/* Directions polyline */}
                 {routePoints.length > 1 && (
                     <MapViewDirections
                         origin={routePoints[0]}
@@ -384,6 +512,7 @@ export default function RouteMap({
                 </View>
             )}
 
+            {/* Controls */}
             {showControls && (
                 <View style={styles.controls}>
                     <View style={styles.row}>
@@ -416,6 +545,7 @@ export default function RouteMap({
                             onPress={() => openInGoogleMaps(routePoints)}
                             disabled={routePoints.length < 2}
                             style={styles.openBtn}
+                            active={false}
                         />
 
                         <ControlButton
@@ -423,20 +553,100 @@ export default function RouteMap({
                             onPress={() => setSaveVisible(true)}
                             disabled={allValuesWithEnds.length < 2}
                             style={styles.openBtn}
+                            active={false}
                         />
                     </View>
                 </View>
             )}
 
+            {/* ---- View Panel ---- */}
+            {placePanelVisible && (
+                <View style={viewPanelStyles.wrapper}>
+                    <View style={viewPanelStyles.card}>
+                        {/* Small PHOTO at the top */}
+                        {!placePanelError && !placePanelLoading && placePanelData?.photoURL ? (
+                            <Pressable
+                                onPress={() => handleOpenUrl(getPrimaryUrl(placePanelData))}
+                                style={viewPanelStyles.photoWrap}
+                                android_ripple={{ color: "rgba(255,255,255,0.12)" }}
+                            >
+                                <Image
+                                    source={{ uri: placePanelData.photoURL }}
+                                    style={viewPanelStyles.photo}
+                                    resizeMode="cover"
+                                />
+                            </Pressable>
+                        ) : null}
+
+                        {/* Header */}
+                        <View style={viewPanelStyles.headerRow}>
+                            <Text style={viewPanelStyles.headerText}>
+                                {placePanelLoading
+                                    ? "Loading place info..."
+                                    : placePanelData?.title || "Place details"}
+                            </Text>
+                            <Pressable
+                                onPress={() => setPlacePanelVisible(false)}
+                                style={viewPanelStyles.closeBtn}
+                            >
+                                <Text style={viewPanelStyles.closeText}>✕</Text>
+                            </Pressable>
+                        </View>
+
+                        {placePanelError ? (
+                            <Text style={viewPanelStyles.error}>{placePanelError}</Text>
+                        ) : placePanelLoading ? (
+                            <ActivityIndicator />
+                        ) : placePanelData ? (
+                            <View style={{ gap: 6 }}>
+                                {typeof placePanelData.rating === "number" && (
+                                    <Text style={viewPanelStyles.rating}>
+                                        Rating: {placePanelData.rating.toFixed(1)}
+                                    </Text>
+                                )}
+
+                                {placePanelData.description ? (
+                                    <Text numberOfLines={3} style={viewPanelStyles.desc}>
+                                        {placePanelData.description}
+                                    </Text>
+                                ) : null}
+
+                                {Array.isArray(placePanelData.reviews) &&
+                                    placePanelData.reviews.length > 0 ? (
+                                    <View style={{ marginTop: 6 }}>
+                                        <Text style={viewPanelStyles.subhead}>Top review</Text>
+                                        <Text style={viewPanelStyles.reviewAuthor}>
+                                            {placePanelData.reviews[0]?.authorName || "Anonymous"}
+                                            {placePanelData.reviews[0]?.rating != null
+                                                ? ` • ${placePanelData.reviews[0].rating.toFixed(1)}★`
+                                                : ""}
+                                            {placePanelData.reviews[0]?.relativeTime
+                                                ? ` • ${placePanelData.reviews[0].relativeTime}`
+                                                : ""}
+                                        </Text>
+                                        <Text numberOfLines={4} style={viewPanelStyles.reviewText}>
+                                            {placePanelData.reviews[0]?.text || ""}
+                                        </Text>
+                                    </View>
+                                ) : null}
+                            </View>
+                        ) : (
+                            <Text style={viewPanelStyles.desc}>No details available.</Text>
+                        )}
+                    </View>
+                </View>
+            )}
+
+            {/* Save Route Modal */}
             <SaveRouteModal
                 visible={saveVisible}
                 onClose={() => setSaveVisible(false)}
                 allValuesWithEnds={allValuesWithEnds}
                 defaultTitle=""
                 defaultDescription=""
-                defaultSharable="PRIVATE"  // <-- fixed here
+                defaultSharable="PRIVATE"
                 onSuccess={(routeId) => {
-                    Alert.alert("Saved 🎉", `Route saved with id: ${routeId}`);
+                    Alert.alert("Route Saved 🎉");
                 }}
             />
         </View>
@@ -493,16 +703,26 @@ const styles = StyleSheet.create({
         letterSpacing: 0.2,
         includeFontPadding: false,
     },
+    btnTextActive: { color: "#fff" },
+    btnTextDisabled: { color: "rgba(255,255,255,0.6)" },
+
+    // Clear active highlight (thicker border + subtle fill)
     btnActive: {
         borderColor: "#fff",
-        backgroundColor: "rgba(255,255,255,0.08)",
+        backgroundColor: "rgba(255,255,255,0.16)",
     },
+
+    // Stronger pressed feedback so you feel the tap
+    btnPressedStrong: {
+        backgroundColor: "rgba(255,255,255,0.24)",
+        borderColor: "#fff",
+        borderWidth: 1.5,
+    },
+
     btnDisabled: {
-        opacity: 0.6,
+        opacity: 0.65,
     },
-    btnPressed: {
-        backgroundColor: "rgba(255,255,255,0.12)",
-    },
+
     rowBtn: { flex: 1 },
     openBtn: { alignSelf: "center", minWidth: 180 },
 });
@@ -565,9 +785,57 @@ const modalStyles = StyleSheet.create({
     btnPrimary: { borderColor: "#fff", backgroundColor: "rgba(255,255,255,0.12)" },
     btnDisabled: { opacity: 0.6, borderColor: "rgba(255,255,255,0.25)" },
     btnText: { color: "#fff", fontWeight: "700" },
-    hint: {
-        marginTop: 10,
-        color: "rgba(255,255,255,0.75)",
-        fontSize: 12,
+    hint: { marginTop: 10, color: "rgba(255,255,255,0.75)", fontSize: 12 },
+});
+
+const viewPanelStyles = StyleSheet.create({
+    wrapper: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 20,
+        paddingHorizontal: 12,
     },
+    card: {
+        backgroundColor: "rgba(18,18,18,0.95)",
+        borderRadius: 14,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.08)",
+    },
+
+    // thumbnail
+    photoWrap: {
+        alignSelf: "flex-start",
+        borderRadius: 10,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.12)",
+        marginBottom: 6,
+    },
+    photo: {
+        width: 120,
+        height: 72,
+    },
+
+    headerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 6,
+    },
+    headerText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+    closeBtn: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        backgroundColor: "rgba(255,255,255,0.08)",
+    },
+    closeText: { color: "#fff", fontWeight: "800" },
+    rating: { color: "#fff" },
+    desc: { color: "rgba(255,255,255,0.9)" },
+    subhead: { color: "#fff", fontWeight: "700", marginBottom: 2, marginTop: 2 },
+    reviewAuthor: { color: "rgba(255,255,255,0.8)", marginBottom: 2 },
+    reviewText: { color: "rgba(255,255,255,0.85)" },
+    error: { color: "#fca5a5" },
 });

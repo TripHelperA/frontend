@@ -144,12 +144,14 @@ export default function LandingScreen({
                                     <Text className="text-white font-bold text-base">Plan a Trip</Text>
                                 </Pressable>
 
+                                {/*
                                 <Pressable
                                     onPress={onSearchTrips}
                                     className="flex-1 items-center justify-center rounded-2xl py-2 bg-sky-400 border border-black/5 shadow active:opacity-90"
                                 >
                                     <Text className="text-neutral-900 font-bold text-base">Search Trips</Text>
                                 </Pressable>
+                                */}
                             </View>
                         </View>
                     </View>

@@ -1,7 +1,6 @@
 import { generateClient } from "aws-amplify/api";
 import { useState } from "react";
-import { StatusBar, View } from "react-native";
-import { allMarkers } from "../../components/tabs/dummyData";
+import { StatusBar, Text, View } from "react-native";
 import RouteMapCaller from "../../components/tabs/RouteMapCaller";
 import TripInputPanel from "../../components/tabs/TripInputPanel";
 
@@ -190,23 +189,30 @@ export default function Map() {
                 onAiSearch={handleAiSearch}
             />
 
-            <RouteMapCaller
-                // If AI produced an ordered route, prefer it; otherwise use your defaults
-                dataArray={routeMarkers.length ? routeMarkers : allMarkers}
-                googleMapsApiKey={
-                    process.env.GOOGLE_MAPS_API_KEY ||
-                    "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k"
-                }
-                initialRegion={{
-                    latitude: (startMarker ?? DEFAULT_START).latitude,
-                    longitude: (startMarker ?? DEFAULT_START).longitude,
-                    latitudeDelta: 2,
-                    longitudeDelta: 2,
-                }}
-                fixedStart={startMarker ?? DEFAULT_START}
-                fixedEnd={endMarker ?? DEFAULT_END}
-                defaultMode="view"
-            />
+            {routeMarkers.length > 0 ? (
+                <RouteMapCaller
+                    dataArray={routeMarkers}
+                    googleMapsApiKey={
+                        process.env.GOOGLE_MAPS_API_KEY ||
+                        "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k"
+                    }
+                    initialRegion={{
+                        latitude: (startMarker ?? DEFAULT_START).latitude,
+                        longitude: (startMarker ?? DEFAULT_START).longitude,
+                        latitudeDelta: 2,
+                        longitudeDelta: 2,
+                    }}
+                    fixedStart={startMarker ?? DEFAULT_START}
+                    fixedEnd={endMarker ?? DEFAULT_END}
+                    defaultMode="view"
+                />
+            ) : (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ color: "#64748B", fontSize: 16 }}>
+                        Search to generate a route
+                    </Text>
+                </View>
+            )}
         </View>
     );
 }

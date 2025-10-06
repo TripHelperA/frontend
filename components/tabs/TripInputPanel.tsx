@@ -77,7 +77,7 @@ const TripInputPanel: React.FC<TripInputPanelProps> = ({
     const isButtonDisabled =
         activeView === "planner" ? !isPlannerFormValid : !isAiFormValid;
     const buttonText =
-        activeView === "planner" ? "Search Journeys" : "Get AI Suggestion";
+        activeView === "planner" ? "Describe Your Trip" : "Find Routes";
 
     const buttonAction = () => {
         if (activeView === "planner") {
@@ -145,7 +145,7 @@ const TripInputPanel: React.FC<TripInputPanelProps> = ({
             <TextInput
                 style={styles.textArea}
                 multiline
-                placeholder="e.g., 'A scenic route from Taksim to Sultanahmet...'"
+                placeholder="e.g., 'A scenic route...'"
                 placeholderTextColor="#9CA3AF"
                 value={aiSearchQuery}
                 onChangeText={setAiSearchQuery}
@@ -182,7 +182,7 @@ const TripInputPanel: React.FC<TripInputPanelProps> = ({
                             <View style={styles.navButton} />
                         )}
                         <Text style={styles.headerTitle}>
-                            {activeView === "planner" ? "Trip Planner" : "AI Search"}
+                            {activeView === "planner" ? "Trip Planner" : "Give Your Prompt"}
                         </Text>
                         {activeView === "planner" ? (
                             <TouchableOpacity

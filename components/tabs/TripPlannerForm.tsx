@@ -52,7 +52,7 @@ const TripInputPanel: React.FC<TripInputPanelProps> = ({
     const isButtonDisabled =
         activeView === "planner" ? !isPlannerFormValid : !isAiFormValid;
     const buttonText =
-        activeView === "planner" ? "Search Journeys" : "Get AI Suggestion";
+        activeView === "planner" ? "Describe Your Trip" : "Find Routes";
 
     const buttonAction = () => {
         if (activeView === "planner") {

@@ -1,17 +1,39 @@
 // app/post-detail.tsx
 import { Ionicons } from "@expo/vector-icons";
+import { generateClient } from "aws-amplify/api";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import {
     ImageBackground,
     ImageSourcePropType,
+    Pressable,
     SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     View
 } from "react-native";
+
+const client = generateClient();
+
+const GET_ROUTE = /* GraphQL */ `
+  query GetRoute($routeId: ID!) {
+    getRoute(routeId: $routeId) {
+      routeId
+      title
+      description
+      sharable
+      locations {
+        latitude
+        longitude
+        placeId
+        isOnTheRoute
+      }
+    }
+  }
+`;
+
 
 const palette = {
     bg: "#F8FAFC",
@@ -22,17 +44,18 @@ const palette = {
     hairline: "rgba(2,132,199,0.12)",
     card: "rgba(255,255,255,0.92)",
     glassStroke: "rgba(15, 23, 42, 0.06)",
+    orange: "#F97316", // new accent color
 };
 
 export default function PostDetail() {
     const router = useRouter();
     const params = useLocalSearchParams<{
+        routeId?: string;
         title?: string;
         description?: string;
-        imageSource?: string; // numeric module id (as string) OR a remote/local uri
+        imageSource?: string;
     }>();
 
-    // Image source supports both 'numeric-as-string' and 'uri'
     const imageSource: ImageSourcePropType | undefined = useMemo(() => {
         const raw = params.imageSource ?? "";
         if (!raw) return undefined;
@@ -40,7 +63,6 @@ export default function PostDetail() {
         return { uri: raw };
     }, [params.imageSource]);
 
-    // Quick read-time estimator (200 wpm)
     const readTime = useMemo(() => {
         const words = (params.description ?? "").trim().split(/\s+/).filter(Boolean)
             .length;
@@ -66,7 +88,7 @@ export default function PostDetail() {
         <SafeAreaView style={styles.safeArea}>
             <Stack.Screen
                 options={{
-                    title: "Gönderi",
+                    title: "Blog",
                     headerShown: true,
                     headerStyle: { backgroundColor: palette.primary },
                     headerTintColor: "#FFFFFF",
@@ -87,7 +109,6 @@ export default function PostDetail() {
                                 style={StyleSheet.absoluteFill}
                             />
                             <View style={styles.heroBottom}>
-                                {/* Badges */}
                                 <View style={styles.badgeRow}>
                                     {readTime ? (
                                         <View style={styles.badge}>
@@ -96,8 +117,6 @@ export default function PostDetail() {
                                         </View>
                                     ) : null}
                                 </View>
-
-                                {/* Title over the image */}
                                 <Text numberOfLines={3} style={styles.heroTitle}>
                                     {params.title ?? "Başlık"}
                                 </Text>
@@ -105,7 +124,7 @@ export default function PostDetail() {
                         </ImageBackground>
                     ) : (
                         <View style={[styles.heroImage, styles.imagePlaceholder]}>
-                            <Text style={{ color: palette.textMuted }}>Görsel yok</Text>
+                            <Text style={{ color: palette.textMuted }}>No image</Text>
                         </View>
                     )}
                 </View>
@@ -113,7 +132,6 @@ export default function PostDetail() {
                 {/* FLOATING CARD */}
                 <View style={styles.cardWrap}>
                     <View style={styles.card}>
-
                         {/* Body */}
                         {!!params.description ? (
                             <Text style={styles.desc}>{params.description}</Text>
@@ -122,6 +140,115 @@ export default function PostDetail() {
                                 Henüz açıklama eklenmemiş.
                             </Text>
                         )}
+
+                        {/* Simple Orange Button */}
+                        <Pressable
+                            onPress={async () => {
+                                try {
+                                    const routeId =
+                                        Array.isArray(params.routeId) ? params.routeId[0] : params.routeId;
+                                    if (!routeId) {
+                                        alert("Missing routeId");
+                                        return;
+                                    }
+
+                                    const GET_ROUTE = /* GraphQL */ `
+                                    query GetRoute($routeId: ID!) {
+                                    getRoute(routeId: $routeId) {
+                                        routeId
+                                        title
+                                        description
+                                        locations {
+                                        placeId
+                                        isOnTheRoute
+                                        }
+                                    }
+                                    }
+                                `;
+
+                                    const GET_PLACE_INFO = /* GraphQL */ `
+                                    query GetPlaceInfo($input: String!) {
+                                    getPlaceInfo(input: $input) {
+                                        latitude
+                                        longitude
+                                    }
+                                    }
+                                `;
+
+                                    // 1️⃣ Fetch the route
+                                    const { data, errors } = await client.graphql({
+                                        query: GET_ROUTE,
+                                        variables: { routeId },
+                                    } as const);
+                                    if (errors?.length) throw new Error(errors.map(e => e.message).join("; "));
+                                    const route = data?.getRoute;
+                                    if (!route?.locations?.length) {
+                                        alert("No locations found for this route.");
+                                        return;
+                                    }
+
+                                    // 2️⃣ Parallelize all getPlaceInfo requests
+                                    const results = await Promise.all(
+                                        route.locations.map(async (loc: any) => {
+                                            try {
+                                                const res = await client.graphql({
+                                                    query: GET_PLACE_INFO,
+                                                    variables: { input: loc.placeId },
+                                                });
+                                                const info = res?.data?.getPlaceInfo;
+                                                return info
+                                                    ? {
+                                                        latitude: info.latitude,
+                                                        longitude: info.longitude,
+                                                        isOnTheRoute: loc.isOnTheRoute,
+                                                        google_place_id: loc.placeId,
+                                                    }
+                                                    : null;
+                                            } catch (e) {
+                                                console.warn("getPlaceInfo failed:", loc.placeId, e);
+                                                return null;
+                                            }
+                                        })
+                                    );
+
+                                    // 3️⃣ Filter valid markers
+                                    const dataArray = results.filter((x): x is NonNullable<typeof x> => !!x);
+                                    if (!dataArray.length) {
+                                        alert("Failed to resolve any coordinates.");
+                                        return;
+                                    }
+
+                                    // 4️⃣ Define map setup
+                                    const fixedStart = dataArray[0];
+                                    const fixedEnd = dataArray[dataArray.length - 1];
+                                    const initialRegion = {
+                                        latitude: fixedStart.latitude,
+                                        longitude: fixedStart.longitude,
+                                        latitudeDelta: 0.25,
+                                        longitudeDelta: 0.25,
+                                    };
+
+                                    // 5️⃣ Navigate
+                                    const encode = (o: unknown) => encodeURIComponent(JSON.stringify(o));
+                                    router.push({
+                                        pathname: "/tabs/RouteMap",
+                                        params: {
+                                            dataArray: encode(dataArray),
+                                            fixedStart: encode(fixedStart),
+                                            fixedEnd: encode(fixedEnd),
+                                            initialRegion: encode(initialRegion),
+                                        },
+                                    });
+                                } catch (e: any) {
+                                    console.warn("Error loading route:", e);
+                                    alert(e?.message ?? "Failed to open route map.");
+                                }
+                            }}
+                            style={styles.orangeButton}
+                        >
+                            <Text style={styles.orangeButtonText}>Get Route</Text>
+                        </Pressable>
+
                     </View>
                 </View>
 
@@ -138,7 +265,6 @@ const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: palette.bg },
     scroll: { paddingBottom: 24 },
 
-    // HERO
     heroWrap: {
         width: "100%",
         backgroundColor: "#FFF",
@@ -193,9 +319,8 @@ const styles = StyleSheet.create({
         letterSpacing: 0.2,
     },
 
-    // FLOATING CARD
     cardWrap: {
-        marginTop: -18, // pulls card into the hero for a “floating” feel
+        marginTop: -18,
         paddingHorizontal: 16,
     },
     card: {
@@ -211,36 +336,25 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         elevation: 3,
     },
-
-    // Meta row (under title)
-    metaRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    metaGroup: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-    },
-    metaDot: {
-        width: 4,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: palette.hairline,
-        marginHorizontal: 10,
-    },
-    metaText: {
-        fontSize: 13,
-        color: palette.textMuted,
-        fontWeight: "600",
-    },
-
-    // Body text
     desc: {
         fontSize: 16,
         lineHeight: 24,
         color: palette.text,
         marginTop: 4,
+        marginBottom: 16,
+    },
+
+    orangeButton: {
+        backgroundColor: palette.orange,
+        borderRadius: 10,
+        paddingVertical: 12,
+        alignItems: "center",
+        marginTop: 4,
+    },
+    orangeButtonText: {
+        color: "#FFF",
+        fontSize: 16,
+        fontWeight: "700",
+        letterSpacing: 0.4,
     },
 });

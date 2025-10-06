@@ -307,6 +307,7 @@ const ForumContent: React.FC<ForumContentProps> = ({ router }) => {
         router.push({
             pathname: "/tabs/PostDetail",
             params: {
+                routeId: post.id,
                 title: post.title,
                 description: post.description,
                 imageSource,
