@@ -1,10 +1,12 @@
 import Header from "@/components/tabs/Header";
-import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
+import { generateClient } from "aws-amplify/api";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 
-const attributes = [
+const DEFAULT_ATTRIBUTE_VAL = 5;
+
+const ATTR_KEYS = [
     "algo_romantic",
     "algo_adventurous",
     "algo_relaxation",
@@ -13,27 +15,28 @@ const attributes = [
     "algo_nature",
     "algo_entertaining",
     "algo_modern",
-];
+] as const;
 
-type Interest = { id: string; label: string; emoji: string, attribute: string };
+type AttrKey = typeof ATTR_KEYS[number];
+type Interest = { id: string; label: string; emoji: string; attribute: AttrKey };
 
 const ALL_INTERESTS: Interest[] = [
-    { id: "beach", label: "Beach", emoji: "🏖️", attribute: attributes[0] },
-    { id: "mountains", label: "Mountains", emoji: "⛰️", attribute: attributes[1] },
-    { id: "city_trips", label: "City Trips", emoji: "🏙️", attribute: attributes[2] },
-    { id: "road_trips", label: "Road Trips", emoji: "🚗", attribute: attributes[3] },
-    { id: "camping", label: "Camping", emoji: "🏕️", attribute: attributes[4] },
-    { id: "hiking", label: "Hiking", emoji: "🥾", attribute: attributes[5] },
-    { id: "cruises", label: "Cruises", emoji: "🛳️", attribute: attributes[6] },
-    { id: "cultural", label: "Cultural Tours", emoji: "🏛️", attribute: attributes[7] },
-    { id: "safari", label: "Safari", emoji: "🦁", attribute: attributes[0] },
-    { id: "skiing", label: "Skiing", emoji: "🎿", attribute: attributes[1] },
-    { id: "islands", label: "Island Hopping", emoji: "🏝️", attribute: attributes[2] },
-    { id: "food", label: "Food Trips", emoji: "🍜", attribute: attributes[3] },
-    { id: "adventure", label: "Adventure", emoji: "🪂", attribute: attributes[4] },
-    { id: "wellness", label: "Wellness Retreats", emoji: "🧘", attribute: attributes[5] },
-    { id: "festivals", label: "Festivals", emoji: "🎉", attribute: attributes[6] },
-    { id: "wildlife", label: "Wildlife", emoji: "🐘", attribute: attributes[7] },
+    { id: "beach", label: "Beach", emoji: "🏖️", attribute: "algo_relaxation" },
+    { id: "mountains", label: "Mountains", emoji: "⛰️", attribute: "algo_nature" },
+    { id: "city_trips", label: "City Trips", emoji: "🏙️", attribute: "algo_modern" },
+    { id: "road_trips", label: "Road Trips", emoji: "🚗", attribute: "algo_adventurous" },
+    { id: "camping", label: "Camping", emoji: "🏕️", attribute: "algo_nature" },
+    { id: "hiking", label: "Hiking", emoji: "🥾", attribute: "algo_adventurous" },
+    { id: "cruises", label: "Cruises", emoji: "🛳️", attribute: "algo_romantic" },
+    { id: "cultural", label: "Cultural Tours", emoji: "🏛️", attribute: "algo_cultural" },
+    { id: "safari", label: "Safari", emoji: "🦁", attribute: "algo_nature" },
+    { id: "skiing", label: "Skiing", emoji: "🎿", attribute: "algo_adventurous" },
+    { id: "islands", label: "Island Hopping", emoji: "🏝️", attribute: "algo_romantic" },
+    { id: "food", label: "Food Trips", emoji: "🍜", attribute: "algo_gastronomic" },
+    { id: "adventure", label: "Adventure", emoji: "🪂", attribute: "algo_adventurous" },
+    { id: "wellness", label: "Wellness Retreats", emoji: "🧘", attribute: "algo_relaxation" },
+    { id: "festivals", label: "Festivals", emoji: "🎉", attribute: "algo_entertaining" },
+    { id: "wildlife", label: "Wildlife", emoji: "🐘", attribute: "algo_nature" },
 ];
 
 const MIN_REQUIRED = 3;
@@ -42,50 +45,70 @@ export default function PickInterests() {
     const router = useRouter();
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
+    // Persist integer array across renders
+    const attributeValuesRef = useRef<number[]>(
+        Array(ATTR_KEYS.length).fill(DEFAULT_ATTRIBUTE_VAL)
+    );
+
+    // Fast map from interest id -> attribute index
+    const INTEREST_TO_IDX: Record<string, number> = useMemo(
+        () =>
+            Object.fromEntries(
+                ALL_INTERESTS.map((i) => [i.id, ATTR_KEYS.indexOf(i.attribute)])
+            ) as Record<string, number>,
+        []
+    );
+
+    const canContinue = selected.size >= MIN_REQUIRED;
+    const remaining = useMemo(
+        () => Math.max(0, MIN_REQUIRED - selected.size),
+        [selected.size]
+    );
+
     const toggle = (id: string) => {
-        setSelected(prev => {
+        setSelected((prev) => {
             const next = new Set(prev);
             next.has(id) ? next.delete(id) : next.add(id);
             return next;
         });
     };
 
-    const canContinue = selected.size >= MIN_REQUIRED;
-    const remaining = useMemo(() => Math.max(0, MIN_REQUIRED - selected.size), [selected.size]);
-    const clamp = (n: number, min = 1, max = 10) => Math.max(min, Math.min(max, n));
+    const client = generateClient();
+
+    const updateUserMetricsMutation = /* GraphQL */ `
+  mutation UpdateUserMetrics($metrics: [Int!]!) {
+    updateUserMetrics(metrics: $metrics)
+  }
+`;
+
+
 
     const onContinue = async () => {
-        // count how many times each attribute should be incremented
-        const incBy: Record<string, number> = {};
-        ALL_INTERESTS.forEach(i => {
-            if (selected.has(i.id)) {
-                incBy[i.attribute] = (incBy[i.attribute] ?? 0) + 1;
+        const updatedValues = [...attributeValuesRef.current];
+
+        selected.forEach(id => {
+            const interest = ALL_INTERESTS.find(i => i.id === id);
+            if (interest) {
+                const idx = ATTR_KEYS.indexOf(interest.attribute as AttrKey);
+                if (idx >= 0) {
+                    updatedValues[idx] = updatedValues[idx] + 1;
+                }
             }
         });
+        console.log("selected ids:", [...selected]);
+        console.log("payload metrics:", updatedValues);           // should be numbers, length 8
+        console.log("type check:", updatedValues.map(v => typeof v)); // should be all "number"
+        try {
+            const result = await client.graphql({
+                query: updateUserMetricsMutation,
+                variables: { metrics: updatedValues },
+            });
 
-        if (Object.keys(incBy).length === 0) {
-            // nothing selected; optionally return early
-            return;
+            console.log("Mutation result:", result.data.updateUserMetrics);
+            router.replace("/tabs/Home");
+        } catch (err) {
+            console.error("Failed to update metrics", err);
         }
-
-        // fetch current user attributes
-        const current = await fetchUserAttributes();
-
-        // build update payload with clamped values (min=1, max=10)
-        const updates: Record<string, string> = {};
-        for (const [attr, add] of Object.entries(incBy)) {
-            const key = `custom:${attr}`;
-
-            // If the attribute is missing, treat baseline as 1 (your min), then add.
-            // If you prefer "missing means 0", change baseline to 0.
-            const baseline = current[key] !== undefined ? parseInt(current[key]!, 10) : 1;
-
-            const nextVal = clamp(baseline + add, 1, 10);
-            updates[key] = String(nextVal);
-        }
-
-        await updateUserAttributes({ userAttributes: updates });
-        router.replace("/tabs/Home");
     };
 
     return (

@@ -13,25 +13,10 @@ enum Step {
     Confirm = "confirm",
 }
 
-const ATTRIBUTE_KEYS = [
-    "algo_romantic",
-    "algo_adventurous",
-    "algo_relaxation",
-    "algo_cultural",
-    "algo_gastronomic",
-    "algo_nature",
-    "algo_entertaining",
-    "algo_modern",
-] as const;
-
-const DEFAULT_CUSTOMS: Record<string, string> = Object.fromEntries(
-    ATTRIBUTE_KEYS.map(k => [`custom:${k}`, "4"])
-);
-
-
 export default function Register() {
     const router = useRouter();
 
+    const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [passwordAgain, setPasswordAgain] = useState("");
@@ -44,19 +29,18 @@ export default function Register() {
 
     async function handleSignUp() {
         setError("");
-        if (!email || !password) return setError("Please fill email and password.");
+        if (!email || !password || !username) return setError("Please fill username, email and password.");
         if (password !== passwordAgain) return setError("Passwords do not match.");
 
         try {
             setLoading(true);
             await signOut({ global: true });
             await signUp({
-                username: email,
+                username: username,
                 password,
                 options: {
                     userAttributes: {
                         email,
-                        ...DEFAULT_CUSTOMS, // initialize all custom attrs to "4"
                     },
                 },
             });
@@ -73,8 +57,8 @@ export default function Register() {
         if (!code) return setError("Enter the verification code.");
         try {
             setLoading(true);
-            await confirmSignUp({ username: email, confirmationCode: code });
-            await signIn({ username: email, password });
+            await confirmSignUp({ username: username, confirmationCode: code });
+            await signIn({ username: username, password });
             router.replace("/login/PickInterest");
         } catch (e: any) {
             setError(e.message ?? "Confirmation failed.");
@@ -87,7 +71,7 @@ export default function Register() {
         setError("");
         try {
             setLoading(true);
-            await resendSignUpCode({ username: email });
+            await resendSignUpCode({ username: username });
         } catch (e: any) {
             setError(e.message ?? "Could not resend code.");
         } finally {
@@ -116,6 +100,17 @@ export default function Register() {
 
                 {step === Step.Form ? (
                     <>
+                        {/* Username */}
+                        <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
+                            <TextInput
+                                value={username}
+                                onChangeText={setUsername}
+                                placeholder="Username"
+                                placeholderTextColor={"white"}
+                                autoCapitalize="none"
+                            />
+                        </View>
+
                         {/* Email */}
                         <View className="bg-black/20 p-3 rounded-3xl w-full my-3">
                             <TextInput

@@ -11,6 +11,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@aws-amplify/api": "^6.3.19",
+    "@aws-amplify/api-graphql": "^4.8.0",
     "@aws-amplify/react-native": "^1.1.10",
     "@aws-amplify/ui-react-native": "^2.6.0",
     "@expo/html-elements": "^0.10.1",
@@ -38,7 +40,8 @@
     "react-aria": "^3.33.0",
     "react-native": "0.79.5",
     "react-native-get-random-values": "^1.11.0",
-    "react-native-maps": "^1.20.1",
+    "react-native-maps": "1.20.1",
+    "react-native-maps-directions": "^1.9.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-responsive-screen": "^1.4.2",
     "react-native-safe-area-context": "5.4.0",

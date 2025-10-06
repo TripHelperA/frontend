@@ -27,7 +27,7 @@
         "ios": {
             "supportsTablet": true,
             "config": {
-                "googleMapsApiKey": ""
+                "googleMapsApiKey": "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k"
             }
         },
         "android": {
@@ -37,7 +37,7 @@
             },
             "config": {
                 "googleMaps": {
-                    "apiKey": ""
+                    "apiKey": "AIzaSyB7CZSentLXI1cqLZP8GsxfKqA-5G5qm-k"
                 }
             },
             "package": "com.ibrahim.enes.yilmaz.myexpoapp"

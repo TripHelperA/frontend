@@ -9,6 +9,7 @@ import { ConsoleLogger } from 'aws-amplify/utils';
 
 ConsoleLogger.LOG_LEVEL = 'DEBUG';
 const log = new ConsoleLogger('Auth');
+const ADMIN = false;
 
 const backgroundImage = require("../../assets/backgrounds/background2.jpg");
 
@@ -20,6 +21,7 @@ export default function Login() {
     const [error, setError] = useState("");
 
     const handleLogin = async () => {
+
         setLoading(true);
         setError("");
         try {
